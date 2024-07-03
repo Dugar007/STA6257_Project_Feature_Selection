@@ -29,6 +29,15 @@ editor:
 
 ## Methods
 
+datasets
+-numeric
+-mixed
+-NLP
+
+tasks
+-regression
+-classification
+
 ### Experiment 1: Selection Bias
 
 ### Experiment 2: Multicollinearity
