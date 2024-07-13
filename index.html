@@ -7,9 +7,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 <meta name="author" content="Jason Case, Abhishek Dugar. Daniel Nkuah, Khoa Tran">
-<meta name="dcterms.date" content="2024-07-08">
+<meta name="dcterms.date" content="2024-07-13">
 
-<title>Feature Selection - Data Science Capstone</title>
+<title>Feature Selection: An Exploration of Algorithm Performance, Selection Bias, and Multicollinearity</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -21,7 +21,27 @@ ul.task-list li input[type="checkbox"] {
 width: 0.8em;
 margin: 0 0.8em 0.2em -1em;  vertical-align: middle;
 }
-</style>
+
+div.csl-bib-body { }
+div.csl-entry {
+clear: both;
+margin-bottom: 0em;
+}
+.hanging-indent div.csl-entry {
+margin-left:2em;
+text-indent:-2em;
+}
+div.csl-left-margin {
+min-width:2em;
+float:left;
+}
+div.csl-right-inline {
+margin-left:2em;
+padding-left:1em;
+}
+div.csl-indent {
+margin-left: 2em;
+}</style>
 
 
 <script>/*!
@@ -3043,7 +3063,7 @@ vertical-align: -.125em;
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">Feature Selection - Data Science Capstone</h1>
+<h1 class="title">Feature Selection: An Exploration of Algorithm Performance, Selection Bias, and Multicollinearity</h1>
 </div>
 
 
@@ -3060,7 +3080,7 @@ vertical-align: -.125em;
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">July 8, 2024</p>
+      <p class="date">July 13, 2024</p>
     </div>
   </div>
   
@@ -3078,24 +3098,22 @@ vertical-align: -.125em;
 <section id="early-methods" class="level3">
 <h3 class="anchored" data-anchor-id="early-methods">Early Methods</h3>
 <p>Feature selection’s early forays began with relatively simple approaches like forward, backward, and stepwise variable selection in linear models. Forward selection starts with no variables in the model, adding them one by one based on specific criteria until no significant improvement is observed. Conversely, backward selection begins with all candidate variables, removing the least significant ones iteratively. Stepwise selection combines both approaches, iteratively adding and removing variables to optimize model performance.</p>
-<p>These methods were foundational but had limitations, particularly when applied to datasets with high dimensionality. For instance, Foster and Stine (2004) in their study on predicting bankruptcy highlighted the complexity of variable selection when dealing with large sets of predictors. They utilized a 20:80 train/validation split to ensure robust model evaluation and critiqued traditional criteria like the Akaike Information Criterion (AIC) for being too liberal, risking overfitting. Instead, they advocated for methods like the Bonferroni correction, which, though conservative, provided more reliable results by dynamically adjusting p-values and avoiding inflated values from high leverage points.</p>
+<p>These methods were foundational but had limitations, particularly when applied to datasets with high dimensionality. For instance, <span class="citation" data-cites="foster2004variable">Foster and Stine (<a href="#ref-foster2004variable" role="doc-biblioref">2004</a>)</span> in their study on predicting bankruptcy highlighted the complexity of variable selection when dealing with large sets of predictors. They utilized a 20:80 train/validation split to ensure robust model evaluation and critiqued traditional criteria like the Akaike Information Criterion (AIC) for being too liberal, risking overfitting. Instead, they advocated for methods like the Bonferroni correction, which, though conservative, provided more reliable results by dynamically adjusting p-values and avoiding inflated values from high leverage points.</p>
 <p>Univariate screening procedures marked another step in the evolution of feature selection. These methods involve assessing each predictor variable independently for its relationship with the target variable, selecting those that meet a certain statistical threshold. While straightforward and computationally inexpensive, univariate methods often fail to capture the complex interdependencies between variables.</p>
-<p>In the context of gene selection for cancer classification, Guyon et al. (2022) demonstrated the limitations of univariate methods. Prior to their work, gene selection relied heavily on simple statistical measures such as correlations, which often resulted in large, redundant sets of genes. The advent of Recursive Feature Elimination (RFE) represented a significant improvement. RFE uses Support Vector Machines (SVMs) to iteratively eliminate the least important features, refining the feature set to a more relevant subset and thus enhancing model performance. This method highlighted the critical role of robust feature selection in bioinformatics, where the choice of features often influenced classification outcomes more than the specific classifier used.</p>
+<p>In the context of gene selection for cancer classification, <span class="citation" data-cites="guyon2002gene">Guyon et al. (<a href="#ref-guyon2002gene" role="doc-biblioref">2002</a>)</span> demonstrated the limitations of univariate methods. Prior to their work, gene selection relied heavily on simple statistical measures such as correlations, which often resulted in large, redundant sets of genes. The advent of Recursive Feature Elimination (RFE) represented a significant improvement. RFE uses Support Vector Machines (SVMs) to iteratively eliminate the least important features, refining the feature set to a more relevant subset and thus enhancing model performance. This method highlighted the critical role of robust feature selection in bioinformatics, where the choice of features often influenced classification outcomes more than the specific classifier used.</p>
 </section>
 <section id="modern-methods" class="level3">
 <h3 class="anchored" data-anchor-id="modern-methods">Modern Methods</h3>
-<p>Modern feature selection methods have become essential for data preprocessing, extracting the most important information from big data. By reducing the number of features, these methods mitigate the risk of overfitting and enhance the performance of machine learning models and pattern recognition systems (Venkatesh et al., 2019).</p>
-<p>Advanced feature selection methods include similarity-based, information-theoretical-based, sparse-learning-based, and statistical-based approaches. Similarity-based approaches select features based on their similarity or dissimilarity, while information-theoretical-based approaches use concepts like entropy and mutual information to evaluate feature importance. Sparse-learning-based approaches focus on identifying a small, essential set of features by limiting the number of features selected, and statistical-based approaches utilize statistical tests and models to determine the significance of features for predicting the target variable (Li et al., 2017).</p>
-<p>Early and modern approaches are now categorized into filter, wrapper, embedded, and hybrid approaches. The filter model selects features based on the general properties of the training data, independent of any learning algorithm, making it computationally efficient for large datasets (Das, 2001; Kohavi et al., 1997). Within the filter model, feature selection algorithms can be further divided into feature weighting algorithms, which assign weights to each feature based on their relevance, and subset search algorithms, which explore candidate feature subsets based on specific evaluation measures (Kohavi et al., 1997; Liu et al., 1998). The wrapper model, on the other hand, uses a specific learning algorithm to evaluate and determine which features to keep, often leading to better performance but at a higher computational cost (Langley, 1994). Embedded methods perform feature selection during the model training process, integrating selection directly with learning. Hybrid methods combine the best aspects of filter and wrapper methods to achieve optimal performance with manageable computational complexity (Venkatesh et al., 2019; Jović et al., 2015).</p>
-<p>Feature selection can also be divided into supervised, semi-supervised, and unsupervised categories. Supervised learning involves labeled data, semi-supervised learning utilizes both labeled and unlabeled data, and unsupervised learning works with unlabeled data. Miao et al. (2016) emphasized that the effectiveness of feature selection methods varies depending on the dataset and model used, necessitating tailored approaches to feature selection.</p>
-<p>As feature selection methods evolved, addressing multicollinearity—a scenario where predictor variables are highly correlated—became a critical focus. Traditional methods often assumed independence among features, leading to inaccurate importance measures. Basu and Maji (2022) tackled this issue by introducing a framework to adjust for feature correlations when calculating Shapley values. Their method, termed Multicollinearity Corrected (MCC) Shapley values, provided more accurate measures of feature importance by accounting for existing correlations. Their experiments on datasets with moderate to high feature correlations demonstrated the superiority of MCC Shapley values over non-corrected ones, offering a more reliable interpretation of feature importance in the presence of multicollinearity.</p>
-<p>A novel feature selection algorithm leveraging neural networks aims to enhance classification accuracy while reducing computational load by selecting only the most relevant features. This method utilizes feed-forward neural networks (FFNNs) and integrates seamlessly with other classifiers. The algorithm starts with a minimal feature set and iteratively includes additional features based on their contribution to classification accuracy, ensuring that only significant features are selected (Das, 2001).</p>
+<p>Modern feature selection methods have become essential for data preprocessing, extracting the most important information from big data. By reducing the number of features, these methods mitigate the risk of overfitting and enhance the performance of machine learning models and pattern recognition systems <span class="citation" data-cites="venkatesh2019review">(<a href="#ref-venkatesh2019review" role="doc-biblioref">Venkatesh and Anuradha 2019</a>)</span>.</p>
+<p>Advanced feature selection methods include similarity-based, information-theoretical-based, sparse-learning-based, and statistical-based approaches. Similarity-based approaches select features based on their similarity or dissimilarity, while information-theoretical-based approaches use concepts like entropy and mutual information to evaluate feature importance. Sparse-learning-based approaches focus on identifying a small, essential set of features by limiting the number of features selected, and statistical-based approaches utilize statistical tests and models to determine the significance of features for predicting the target variable <span class="citation" data-cites="li2017feature">(<a href="#ref-li2017feature" role="doc-biblioref">Li et al. 2017</a>)</span>.</p>
+<p>Early and modern approaches are now categorized into filter, wrapper, embedded, and hybrid approaches. The filter model selects features based on the general properties of the training data, independent of any learning algorithm, making it computationally efficient for large datasets <span class="citation" data-cites="das2001filters kohavi1997wrappers">(<a href="#ref-das2001filters" role="doc-biblioref">Das 2001</a>; <a href="#ref-kohavi1997wrappers" role="doc-biblioref">Kohavi and John 1997</a>)</span>. Within the filter model, feature selection algorithms can be further divided into feature weighting algorithms, which assign weights to each feature based on their relevance, and subset search algorithms, which explore candidate feature subsets based on specific evaluation measures <span class="citation" data-cites="kohavi1997wrappers">(<a href="#ref-kohavi1997wrappers" role="doc-biblioref">Kohavi and John 1997</a>)</span> <strong>(Kohavi et al., 1997; Liu et al., 1998)</strong>. The wrapper model, on the other hand, uses a specific learning algorithm to evaluate and determine which features to keep, often leading to better performance but at a higher computational cost <strong>(Langley, 1994)</strong>. Embedded methods perform feature selection during the model training process, integrating selection directly with learning. Hybrid methods combine the best aspects of filter and wrapper methods to achieve optimal performance with manageable computational complexity <span class="citation" data-cites="venkatesh2019review jovic2015review">(<a href="#ref-venkatesh2019review" role="doc-biblioref">Venkatesh and Anuradha 2019</a>; <a href="#ref-jovic2015review" role="doc-biblioref">Jović, Brkić, and Bogunović 2015</a>)</span>.</p>
+<p>Feature selection can also be divided into supervised, semi-supervised, and unsupervised categories. Supervised learning involves labeled data, semi-supervised learning utilizes both labeled and unlabeled data, and unsupervised learning works with unlabeled data. <span class="citation" data-cites="miao2016survey">Miao and Niu (<a href="#ref-miao2016survey" role="doc-biblioref">2016</a>)</span> emphasized that the effectiveness of feature selection methods varies depending on the dataset and model used, necessitating tailored approaches to feature selection.</p>
+<p>As feature selection methods evolved, addressing multicollinearity—a scenario where predictor variables are highly correlated—became a critical focus. Traditional methods often assumed independence among features, leading to inaccurate importance measures. <span class="citation" data-cites="basu2022multicollinearity">Basu and Maji (<a href="#ref-basu2022multicollinearity" role="doc-biblioref">2022</a>)</span> tackled this issue by introducing a framework to adjust for feature correlations when calculating Shapley values. Their method, termed Multicollinearity Corrected (MCC) Shapley values, provided more accurate measures of feature importance by accounting for existing correlations. Their experiments on datasets with moderate to high feature correlations demonstrated the superiority of MCC Shapley values over non-corrected ones, offering a more reliable interpretation of feature importance in the presence of multicollinearity.</p>
+<p>A novel feature selection algorithm leveraging neural networks aims to enhance classification accuracy while reducing computational load by selecting only the most relevant features. This method utilizes feed-forward neural networks (FFNNs) and integrates seamlessly with other classifiers. The algorithm starts with a minimal feature set and iteratively includes additional features based on their contribution to classification accuracy, ensuring that only significant features are selected <span class="citation" data-cites="das2001filters">(<a href="#ref-das2001filters" role="doc-biblioref">Das 2001</a>)</span>.</p>
 <p>Experiments on both artificial datasets, like the Monks problems, and real-world datasets, such as the University of Wisconsin Breast Cancer Dataset, the US Congressional Voting Records Dataset, and the Pima Indians Diabetes Dataset, demonstrated significant reductions in the number of features while improving classification accuracy. This approach emphasizes the importance of feature selection in enhancing classification accuracy and reducing computational load, making it a valuable tool for various classification tasks and data collection processes.</p>
-<p>In more recent developments, multiple criteria decision-making (MCDM) methods have been applied to feature selection, particularly in the context of text classification with small datasets. Kou et al. (2020) evaluated various feature selection methods using MCDM techniques across multiple text classification datasets. By employing methods like PROMETHEE, they ranked feature selection techniques based on a range of performance measures, including accuracy, stability, and efficiency. Their findings underscored the importance of comprehensive evaluation criteria in selecting the most appropriate feature selection method, tailored to specific dataset characteristics.</p>
-</section>
-<section id="conclusion" class="level3">
-<h3 class="anchored" data-anchor-id="conclusion">Conclusion</h3>
+<p>In more recent developments, multiple criteria decision-making (MCDM) methods have been applied to feature selection, particularly in the context of text classification with small datasets. <span class="citation" data-cites="kou2020evaluation">Kou et al. (<a href="#ref-kou2020evaluation" role="doc-biblioref">2020</a>)</span> evaluated various feature selection methods using MCDM techniques across multiple text classification datasets. By employing methods like PROMETHEE, they ranked feature selection techniques based on a range of performance measures, including accuracy, stability, and efficiency. Their findings underscored the importance of comprehensive evaluation criteria in selecting the most appropriate feature selection method, tailored to specific dataset characteristics.</p>
 <p>The trajectory of feature selection in machine learning illustrates a progression from simple, univariate methods to sophisticated, model-based approaches that address complex issues like multicollinearity and multi-criteria decision making. Early skepticism about “data dredging” has given way to an appreciation of the nuanced techniques necessary for robust predictive modeling. Feature selection methods have evolved to include similarity-based, information-theoretical-based, sparse-learning-based, statistical-based, filter, wrapper, embedded, hybrid, supervised, semi-supervised, and unsupervised approaches. Modern methods, such as neural networks, further enhance the accuracy and efficiency of feature selection, ensuring that only the most relevant features are utilized. As the field continues to advance, it is clear that feature selection will remain a cornerstone of machine learning, improving model performance and reducing computational complexity across a wide range of applications.</p>
+<p>Our exploration of feature selection will begin by comparing the performance of various feature selection methods on a variety of datasets. We will look at four different aspects of performance: overall model performance on the holdout set, variance in performance between the training and holdout set, stability in the features selected, and parsimony of the final model. We will then examine feature selection bias of various methods by generating datasets with known parameters and determining if there is a systematic pattern to the features that are selected or omitted. Finally, we will examine the impact of multicollinearity on the feature selection process.</p>
 </section>
 </section>
 <section id="methods" class="level2">
@@ -3127,31 +3145,47 @@ vertical-align: -.125em;
 <section id="statistical-modeling" class="level3">
 <h3 class="anchored" data-anchor-id="statistical-modeling">Statistical Modeling</h3>
 </section>
-<section id="conclusion-1" class="level3">
-<h3 class="anchored" data-anchor-id="conclusion-1">Conclusion</h3>
+<section id="conclusion" class="level3">
+<h3 class="anchored" data-anchor-id="conclusion">Conclusion</h3>
 </section>
 </section>
-<section id="references" class="level2">
-<h2 class="anchored" data-anchor-id="references">References</h2>
-<p>Foster, D. P., &amp; Stine, R. A. (2004). Variable Selection in Data Mining: Building a Predictive Model for Bankruptcy. Journal of the American Statistical Association, 99(466), 303–313. http://www.jstor.org/stable/27590387</p>
-<p>Guyon, I., Weston, J., Barnhill, S. et al. (2022) Gene Selection for Cancer Classification using Support Vector Machines. Machine Learning 46, 389–422. https://doi.org/10.1023/A:1012487302797</p>
-<p>Basu, I., Maji, S. (2022). Multicollinearity Correction and Combined Feature Effect in Shapley Values. In: Long, G., Yu, X., Wang, S. (eds) AI 2021: Advances in Artificial Intelligence. AI 2022. Lecture Notes in Computer Science(), vol 13151. Springer, Cham. https://doi.org/10.1007/978-3-030-97546-3_7</p>
-<p>Kou, G., Yang, P., Peng, Y., Xiao, F., Chen, Y., &amp; Alsaadi, F. E. (2020). Evaluation of feature selection methods for text classification with small datasets using multiple criteria decision-making methods. Applied Soft Computing, 86, 105836. https://doi.org/10.1016/j.asoc.2019.105836</p>
-<p>V. Onnia, M. Tico and J. Saarinen, “Feature selection method using neural network,” Proceedings 2001 International Conference on Image Processing (Cat. No.01CH37205), Thessaloniki, Greece, 2001, pp. 513-516 vol.1, doi: 10.1109/ICIP.2001.959066.</p>
-<p>BÜYÜKKEÇECİ, Mustafa &amp; Okur, Mehmet. (2022). A Comprehensive Review of Feature Selection and Feature Selection Stability in Machine Learning. GAZI UNIVERSITY JOURNAL OF SCIENCE. 36. 10.35378/gujs.993763.</p>
-<p>Shao, Sisi &amp; Ribeiro, Pedro &amp; Ramirez, Christina &amp; Moore, Jason. (2024). A review of feature selection strategies utilizing graph data structures and knowledge graphs.</p>
-<p>A. Benkessirat and N. Benblidia, “Fundamentals of Feature Selection: An Overview and Comparison,” 2019 IEEE/ACS 16th International Conference on Computer Systems and Applications (AICCSA), Abu Dhabi, United Arab Emirates, 2019, pp. 1-6, doi: 10.1109/AICCSA47632.2019.9035281.</p>
-<p>Abid-Althaqafi, N.R.,Alsalamah, H.A. (2024). The Effect of Feature Selection on the Accuracy of X-Platform User Credibility Detection with Supervised Machine Learning. Retrieved from: https:// doi.org/10.3390/electronics13010205</p>
-<p>Yu, L., Liu, H. (2003). Feature selection for high-dimensional data: A fast correlation-based filter solution. In Proceedings of the 20th International Conference on Machine Learning (ICML-03) (pp. 856-863).</p>
-<p>Ambarwati, Y. S., Uyun, S. (2020). Feature selection on Magelang duck egg candling image using variance threshold method. 2020 3rd International Seminar on Research of Information Technology and Intelligent Systems (ISRITI). Retrieved from: https://doi.org/10.1109/ISRITI51436.2020.9315486</p>
-<p>Demir – Kavuk, O., Kamanda, M., Akutsu, T., Knapp, E.W. (2011). Prediction using step-wise L1, L2 regularization and feature selection for small data sets with large number of features. BMC Bioinformatics.</p>
-<p>Li, Jundong &amp; Cheng, Kewei &amp; Wang, Suhang &amp; Morstatter, Fred &amp; Trevino, Robert &amp; Tang, Jiliang &amp; Liu, Huan. (2016). Feature Selection: A Data Perspective. ACM Computing Surveys. 50. 10.1145/3136625.</p>
-<p>Venkatesh, B &amp; Anuradha, J.. (2019). A Review of Feature Selection and Its Methods. Cybernetics and Information Technologies. 19. 3. 10.2478/cait-2019-0001.</p>
-<p>A. Jović, K. Brkić and N. Bogunović, “A review of feature selection methods with applications,” 2015 38th International Convention on Information and Communication Technology, Electronics and Microelectronics (MIPRO), Opatija, Croatia, 2015, pp. 1200-1205, doi: 10.1109/MIPRO.2015.7160458.</p>
-<p>Miao, J., &amp; Niu, L. (2016). A survey on feature selection. <em>Procedia Computer Science, 91</em>, 919-926. https://doi.org/10.1016/j.procs.2016.07.111</p>
+<section id="references" class="level2 unnumbered">
+
+
 </section>
 
-</main>
+<div id="quarto-appendix" class="default"><section class="quarto-appendix-contents" role="doc-bibliography" id="quarto-bibliography"><h2 class="anchored quarto-appendix-heading">References</h2><div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list">
+<div id="ref-basu2022multicollinearity" class="csl-entry" role="listitem">
+Basu, Indranil, and Subhadip Maji. 2022. <span>“Multicollinearity Correction and Combined Feature Effect in Shapley Values.”</span> In <em>Australasian Joint Conference on Artificial Intelligence</em>, 79–90. Springer.
+</div>
+<div id="ref-das2001filters" class="csl-entry" role="listitem">
+Das, Sanmay. 2001. <span>“Filters, Wrappers and a Boosting-Based Hybrid for Feature Selection.”</span> In <em>Icml</em>, 1:74–81. Citeseer.
+</div>
+<div id="ref-foster2004variable" class="csl-entry" role="listitem">
+Foster, Dean P, and Robert A Stine. 2004. <span>“Variable Selection in Data Mining: Building a Predictive Model for Bankruptcy.”</span> <em>Journal of the American Statistical Association</em> 99 (466): 303–13.
+</div>
+<div id="ref-guyon2002gene" class="csl-entry" role="listitem">
+Guyon, Isabelle, Jason Weston, Stephen Barnhill, and Vladimir Vapnik. 2002. <span>“Gene Selection for Cancer Classification Using Support Vector Machines.”</span> <em>Machine Learning</em> 46: 389–422.
+</div>
+<div id="ref-jovic2015review" class="csl-entry" role="listitem">
+Jović, Alan, Karla Brkić, and Nikola Bogunović. 2015. <span>“A Review of Feature Selection Methods with Applications.”</span> In <em>2015 38th International Convention on Information and Communication Technology, Electronics and Microelectronics (MIPRO)</em>, 1200–1205. Ieee.
+</div>
+<div id="ref-kohavi1997wrappers" class="csl-entry" role="listitem">
+Kohavi, Ron, and George H John. 1997. <span>“Wrappers for Feature Subset Selection.”</span> <em>Artificial Intelligence</em> 97 (1-2): 273–324.
+</div>
+<div id="ref-kou2020evaluation" class="csl-entry" role="listitem">
+Kou, Gang, Pei Yang, Yi Peng, Feng Xiao, Yang Chen, and Fawaz E Alsaadi. 2020. <span>“Evaluation of Feature Selection Methods for Text Classification with Small Datasets Using Multiple Criteria Decision-Making Methods.”</span> <em>Applied Soft Computing</em> 86: 105836.
+</div>
+<div id="ref-li2017feature" class="csl-entry" role="listitem">
+Li, Jundong, Kewei Cheng, Suhang Wang, Fred Morstatter, Robert P Trevino, Jiliang Tang, and Huan Liu. 2017. <span>“Feature Selection: A Data Perspective.”</span> <em>ACM Computing Surveys (CSUR)</em> 50 (6): 1–45.
+</div>
+<div id="ref-miao2016survey" class="csl-entry" role="listitem">
+Miao, Jianyu, and Lingfeng Niu. 2016. <span>“A Survey on Feature Selection.”</span> <em>Procedia Computer Science</em> 91: 919–26.
+</div>
+<div id="ref-venkatesh2019review" class="csl-entry" role="listitem">
+Venkatesh, B, and J Anuradha. 2019. <span>“A Review of Feature Selection and Its Methods.”</span> <em>Cybernetics and Information Technologies</em> 19 (1): 3–26.
+</div>
+</div></section></div></main>
 <!-- /main column -->
 <script id="quarto-html-after-body" type="application/javascript">
 window.document.addEventListener("DOMContentLoaded", function (event) {
