@@ -1,0 +1,85 @@
+---
+title: "methods description"
+format: html
+self-contained: true
+execute:
+  echo: true
+  warning: false
+  message: false
+  error: true
+editor: source
+---
+
+### correlation - based feature selection (CFS)
+
+CFS's feature subset evaluation function is:
+
+$\text{Ms} = \frac{k\bar{\text{rcf}}}{\sqrt k + k(k - 1)\bar{\text{rff}}}$
+
+where Ms is the heuristic ”merit” of a feature subset S containing k features, $\bar{\text{rcf}}$ is the mean feature-class correlation and $\bar{\text{rff}}$ is the average feature - feature intercorrelation. The numerator of this equation reflects the extent to which a set of features is indicative of the class, while the denominator measures the level of redundancy among the features [@hall1999].
+ 
+
+### Recursive Feature Elimination
+
+ For an unknown input vector x, a linear classifier takes the form
+
+y(x)=sign(w⋅x−b)
+
+The recursive feature elimination method for support vector machines can be executed through these iterative steps[@guyon2002gene].
+1. Train the SVM classifier
+2. compute the ranking criterion for all features
+3. remove the features with smallest ranking values
+
+For LS-SVM, substituting the KKT conditions into the Lagrangian gives the objective function
+library(latex2exp)
+
+
+$L = -\frac{1}{2} \sum \sum \alpha_i \alpha_j (K(x_i, x_j) + \frac{\sigma_{ij}}{C}) + \sum \alpha_i y_i$
+
+Where ${\sigma_{ij}}$ = 1 if i=j and 0 otherwise.
+
+The ranking criterion can be obtained by:
+
+$D(L^{-m}) = -\frac{1}{2} \sum \sum \alpha_i \alpha_j (K(x_i, x_j) - (K(x_i^{-m}, x_j^{-m})$
+
+Where $x_i^{-m}$ , $x_j^{-m}$ are the vectors in which m-th feature has been removed.
+
+
+### LASSO
+
+LASSO is a technique used for both regularization and variable selection in statistical models. LASSO minimizes the sum of squared errors while imposing an upper limit on the sum of the absolute values of the model parameters.
+
+The LASSO estimate is defined by the solution to the l1 optimization problem
+
+minimize  $\frac{\| Y - X\beta \|_2^2}{n}$ subject to $X \sum_{j=1}^{k} \|\beta_j\|_1 < t$
+
+where t is the upper bound for the sum of the coefficients [@buhlmann2011]
+
+
+
+
+
+ref:
+@article{guyon2002gene,
+  title={Gene selection for cancer classification using support vector machines},
+  author={Guyon, Isabelle and Weston, Jason and Barnhill, Stephen and Vapnik, Vladimir},
+  journal={Machine learning},
+  volume={46},
+  pages={389--422},
+  year={2002},
+  publisher={Springer}
+}
+
+@phdthesis{hall1999correlation,
+  title={Correlation-based feature selection for machine learning},
+  author={Hall, Mark A},
+  year={1999},
+  school={The University of Waikato}
+}
+
+@book{buhlmann2011statistics,
+  title={Statistics for high-dimensional data: methods, theory and applications},
+  author={B{\"u}hlmann, Peter and Van De Geer, Sara},
+  year={2011},
+  publisher={Springer Science \& Business Media}
+}

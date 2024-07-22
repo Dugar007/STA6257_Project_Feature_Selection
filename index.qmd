@@ -19,16 +19,33 @@ editor:
 # Introduction
 The discipline of feature selection in machine learning has evolved significantly over the past few decades, transforming from a practice once stigmatized as "data dredging" to an essential component of modern predictive modeling. Early methods for variable selection were initially met with skepticism by the statistical community, which viewed them as potentially spurious means of uncovering patterns in data. These reservations stemmed from concerns about overfitting and the robustness of statistical inferences drawn from such techniques.
  
-## Early Methods
+**Early Methods**
+
 Feature selection's early forays began with relatively simple approaches like forward, backward, and stepwise variable selection in linear models. Forward selection starts with no variables in the model, adding them one by one based on specific criteria until no significant improvement is observed. Conversely, backward selection begins with all candidate variables, removing the least significant ones iteratively. Stepwise selection combines both approaches, iteratively adding and removing variables to optimize model performance.
  
 These methods were foundational but had limitations, particularly when applied to datasets with high dimensionality. For instance, @foster2004variable in their study on predicting bankruptcy highlighted the complexity of variable selection when dealing with large sets of predictors. They utilized a 20:80 train/validation split to ensure robust model evaluation and critiqued traditional criteria like the Akaike Information Criterion (AIC) for being too liberal, risking overfitting. Instead, they advocated for methods like the Bonferroni correction, which, though conservative, provided more reliable results by dynamically adjusting p-values and avoiding inflated values from high leverage points.
  
 Univariate screening procedures marked another step in the evolution of feature selection. These methods involve assessing each predictor variable independently for its relationship with the target variable, selecting those that meet a certain statistical threshold. While straightforward and computationally inexpensive, univariate methods often fail to capture the complex interdependencies between variables. 
  
-In the context of gene selection for cancer classification, @guyon2002gene demonstrated the limitations of univariate methods. Prior to their work, gene selection relied heavily on simple statistical measures such as correlations, which often resulted in large, redundant sets of genes. The advent of Recursive Feature Elimination (RFE) represented a significant improvement. RFE uses Support Vector Machines (SVMs) to iteratively eliminate the least important features, refining the feature set to a more relevant subset and thus enhancing model performance. This method highlighted the critical role of robust feature selection in bioinformatics, where the choice of features often influenced classification outcomes more than the specific classifier used.
+In the context of gene selection for cancer classification, @guyon2002gene demonstrated the limitations of univariate methods. Prior to their work, gene selection relied heavily on simple statistical measures such as correlations, which often resulted in large, redundant sets of genes. The advent of Recursive Feature Elimination (RFE) represented a significant improvement. RFE uses Support Vector Machines (SVMs) to iteratively eliminate the least important features, refining the feature set to a more relevant subset and thus enhancing model performance. There were multiple tests that demonstrated that SVMs outperforms the baseline methods. First, the best leave-one-out performance results in a 100% accuracy for SVMs and only 90% for the baseline method (combination of univariate classifiers). The second example was using the statistical test, (1-n), where n equals the number of features, we can state with 99.3% confidence that SVMs are better than the baseline method. Additionally, when comparing the SVM-selected genes and baseline-selected genes, the SVM genes are better with a 84.1% confidence based on test error rate and a 99.2% confidence based on the test rejection rate. Figure 1 shows the performance comparison between SVMs and the baseline method, success rate, acceptance rate, extremal margin, and median margin and also indicates that there is a significant difference between the gene selection. Table 1 summarizes the results of the comparison between SVM and the baseline method, and it also indicates that SVMs are significantly better based on the est error rate and that it achieves a higher accuracy in classifying the samples. This method highlighted the critical role of robust feature selection in bioinformatics, where the choice of features often influenced classification outcomes more than the specific classifier used.
+
+**Figure 1. Reproduction of Figure 2 in @guyon2002gene.**
+
+::: {#figure-1 .figure}
+![Figure 1](Figure_1.jpeg){ width=100% }
+*This figure shows a performance comparison between SVMs and the baseline method using Leukemia data. Classifiers were trained on gene subsets selected by SVMs and the baseline method using the training set of the Leukemia data. The number of genes is color-coded and indicated in the legend. Quality indicators are displayed radially: channels 1–4 show cross-validation results using the leave-one-out method; channels 5–8 show test set results. The indicators include success rate (suc), acceptance rate (acc), extremal margin (ext), and median margin (med). Coefficients are rescaled to have zero mean and variance 1 across all plots. For each classifier, a larger colored area indicates better performance. The figure reveals no significant difference in classifier performance on this dataset, but a significant difference in gene selections.*
+:::
+
+
+**Table 1. Reproduction of Table 6 in @guyon2002gene.**
+
+::: {#table-1 .figure}
+![Table 1](Table_1.jpeg){ width=100% }
+*This table presents the performance of the top classifiers on test data consisting of 34 samples. The table includes combinations of SVM or Baseline genes with SVM or Baseline classifiers. For each combination, the table shows the number of selected genes, the number of errors at zero rejection, and the number of rejections at zero error. The number of genes represents the subset selected by the method that provides the best classification performance. Patient ID numbers corresponding to classification errors are indicated in brackets. Additionally, results without any gene selection are provided for comparison.*
+:::
  
-## Modern Methods
+**Modern Methods**
+
 Modern feature selection methods have become essential for data preprocessing, extracting the most important information from big data. By reducing the number of features, these methods mitigate the risk of overfitting and enhance the performance of machine learning models and pattern recognition systems [@venkatesh2019review].
  
 Advanced feature selection methods include similarity-based, information-theoretical-based, sparse-learning-based, and statistical-based approaches. Similarity-based approaches select features based on their similarity or dissimilarity, while information-theoretical-based approaches use concepts like entropy and mutual information to evaluate feature importance. Sparse-learning-based approaches focus on identifying a small, essential set of features by limiting the number of features selected, and statistical-based approaches utilize statistical tests and models to determine the significance of features for predicting the target variable [@li2017feature].
@@ -47,227 +64,106 @@ In more recent developments, multiple criteria decision-making (MCDM) methods ha
  
 The trajectory of feature selection in machine learning illustrates a progression from simple, univariate methods to sophisticated, model-based approaches that address complex issues like multicollinearity and multi-criteria decision making. Early skepticism about "data dredging" has given way to an appreciation of the nuanced techniques necessary for robust predictive modeling. Feature selection methods have evolved to include similarity-based, information-theoretical-based, sparse-learning-based, statistical-based, filter, wrapper, embedded, hybrid, supervised, semi-supervised, and unsupervised approaches. Modern methods, such as neural networks, further enhance the accuracy and efficiency of feature selection, ensuring that only the most relevant features are utilized. As the field continues to advance, it is clear that feature selection will remain a cornerstone of machine learning, improving model performance and reducing computational complexity across a wide range of applications.
 
-## Research Methodology
+**Experiments**
+
 Our exploration of feature selection will begin by comparing the performance of various feature selection methods on a variety of real-world datasets ([Experiment 1](#experiment-1)). We will look at four different aspects of performance: overall model performance on the holdout set, variance in performance between the training and holdout set, stability in the features selected, and parsimony of the final model. We will then examine feature selection bias of various methods by generating datasets with known parameters and determining if there is a systematic pattern to the features that are selected or omitted ([Experiment 2](#experiment-2)). Finally, we will examine the impact of multicollinearity on the feature selection process ([Experiment 3](#experiment-3)).
 
 # Experiment 1: Performance Comparison {#experiment-1}
 ## Methods
 
+We explored an algorithm from each category of feature selection methods.
+
+**Correlation - Based Feature Selection (CFS)**
+
+A common filtering method uses the correlation coefficient to measure the relationship between each variable and the target, independently.
+
+CFS's feature subset evaluation function is:
+
+$\text{Ms} = \frac{k\bar{\text{rcf}}}{\sqrt k + k(k - 1)\bar{\text{rff}}}$
+
+where Ms is the heuristic ”merit” of a feature subset S containing k features, $\bar{\text{rcf}}$ is the mean feature-class correlation and $\bar{\text{rff}}$ is the average feature - feature intercorrelation. The numerator of this equation reflects the extent to which a set of features is indicative of the class, while the denominator measures the level of redundancy among the features [@hall1999correlation].
+ 
+
+**Recursive Feature Elimination (RFE)**
+
+RFE is a common wrapper method that removes variables iteratively.
+
+For an unknown input vector x, a linear classifier takes the form
+
+$y(x)=$sign$(w⋅x−b)$
+
+The recursive feature elimination method for support vector machines can be executed through these iterative steps[@guyon2002gene].
+
+1. Train the SVM classifier
+2. compute the ranking criterion for all features
+3. remove the features with smallest ranking values
+
+For LS-SVM, substituting the KKT conditions into the Lagrangian gives the objective function
+
+$L = -\frac{1}{2} \sum \sum \alpha_i \alpha_j (K(x_i, x_j) + \frac{\sigma_{ij}}{C}) + \sum \alpha_i y_i$
+
+Where ${\sigma_{ij}} = 1$ if $i=j$ and $0$ otherwise.
+
+The ranking criterion can be obtained by:
+
+$D(L^{-m}) = -\frac{1}{2} \sum \sum \alpha_i \alpha_j (K(x_i, x_j) - (K(x_i^{-m}, x_j^{-m})$
+
+Where $x_i^{-m}$ , $x_j^{-m}$ are the vectors in which $m$-th feature has been removed.
+
+**Least Absolute Shrinkage and Selection Operator (LASSO)**
+
+LASSO is an embedded method that uses L1 Regularization to shrink coefficients to zero, effectively performing feature selection during parameter estimation. LASSO minimizes the sum of squared errors while imposing an upper limit on the sum of the absolute values of the model parameters.
+
+The LASSO estimate is defined by the solution to the l1 optimization problem
+
+minimize  $\frac{\| Y - X\beta \|_2^2}{n}$ subject to $X \sum_{j=1}^{k} \|\beta_j\|_1 < t$
+
+where $t$ is the upper bound for the sum of the coefficients [@buhlmann2011statistics]
+
+**CFS & RFE**
+
+For the hybrid method, we will combine the filter and wrapper methods; first filtering using the correlation coefficient and then removing variables iteratively using RFE.
+
 ## Analysis and Results
 
-### Dataset Description
-1. **Birds' Songs Numeric Dataset**: The Birds' Songs Numeric Dataset on Kaggle contains numeric representations of bird songs, aimed at facilitating audio classification tasks. The dataset includes multiple features extracted from the audio files, such as spectral properties and time-domain characteristics, enabling machine learning models to analyze and classify different bird species based on their songs [@fleanend2024birds].
+### Data and Visualization
+
+We evaluated the performance of the methods on several classification tasks. The datasets and associated tasks used were:
+
+**Birds' Songs Numeric Dataset**
+
+The Birds' Songs Numeric Dataset on Kaggle contains numeric representations of bird songs, aimed at facilitating audio classification tasks. The dataset includes multiple features extracted from the audio files, such as spectral properties and time-domain characteristics, enabling machine learning models to analyze and classify different bird species based on their songs [@fleanend2024birds]. This dataset was selected because it contains all numeric predictor variables.
 
 ```{r}
-# Load the ggplot2 package
-library(ggplot2)
-library(tidytext)
-library(tokenizers)
-
-# Step #1 Data Ingesting into R 
-#download datasets, if necessary
-# download_kaggle_dataset <- function(dataset, path) {
-#   # Check if the kaggle command is available
-#   if (system("which kaggle", intern = TRUE) == "") {
-#     stop("Kaggle API is not installed or not in PATH. Please install it first.")
-#   }
-#   
-#   # Ensure the destination directory exists
-#   if (!dir.exists(path)) {
-#     dir.create(path, recursive = TRUE)
-#   }
-#   
-#   # Construct the download command
-#   command <- sprintf("kaggle datasets download -d %s -p %s", dataset, path)
-#   
-#   # Execute the command
-#   system(command)
-#   
-#   # Unzip the downloaded file
-#   zipfile <- list.files(path, pattern = "*.zip", full.names = TRUE)
-#   if (length(zipfile) > 0) {
-#     unzip(zipfile, exdir = path)
-#     file.remove(zipfile)
-#   }
-# }
-# 
-# download_kaggle_dataset("fleanend/birds-songs-numeric-dataset", "./data/birds")
-
-#Importing Train Data
-
-bird_train <- read.csv("./data/birds/train.csv")
-# dim(bird_train)
-# head(bird_train,3)
-
-#Importing Test Data 
-
-bird_test <- read.csv("./data/birds/test.csv")
-# dim(bird_test)
-# head(bird_test,3)
-
-#Data Cleaning and Analysis
-column_names <- names(bird_train)
-# column_names
-# unique(bird_train$species)
-# unique(bird_train$genus)
-# unique(bird_train$id)
-
-# Plotting in graph to see the distribution and find outlier 
-ggplot(bird_train, aes(x = species)) +
-  geom_bar() +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
-  labs(x = "Species", y = "Count", title = "Distribution")
-
-#Adding  column Genus and species to make it unique --Train Data
-bird_train$gen_spec <- paste(bird_train$genus, bird_train$species, sep = "_")
-# unique(bird_train$gen_spec)
-
-#Adding  column Genus and species to make it unique --Test Data
-bird_test$gen_spec <- paste(bird_test$genus, bird_test$species, sep = "_")
-
-
-ggplot(bird_train, aes(x = gen_spec)) +
-  geom_bar() +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
-  labs(x = "gen_spec", y = "Count", title = "Distribution")
 
 ```
 
-2. **Spambase Dataset**: The Spambase dataset from the UCI Machine Learning Repository contains 4601 instances of emails, with 57 features for classification tasks to determine whether an email is spam (1) or not (0). Features include word and character frequency counts, as well as measures of consecutive capital letters. It is commonly used for building and testing spam detection models [@misc_spambase_94].
+**Spambase Dataset**
+
+The Spambase dataset from the UCI Machine Learning Repository contains 4601 instances of emails, with 57 features for classification tasks to determine whether an email is spam (1) or not (0). Features include word and character frequency counts, as well as measures of consecutive capital letters. It is commonly used for building and testing spam detection models [@misc_spambase_94]. This dataset was selected because it contains a mix of numeric and categorical predictor variables.
 
 ```{r}
-# Step #1 Data Ingesting into R 
-# download the datasets
-# download_and_extract_zip <- function(url, dest_dir) {
-#   # Ensure the destination directory exists
-#   if (!dir.exists(dest_dir)) {
-#     dir.create(dest_dir, recursive = TRUE)
-#   }
-#   
-#   # Create a temporary file to hold the downloaded zip file
-#   temp_zip <- tempfile(fileext = ".zip")
-#   
-#   # Download the zip file
-#   download.file(url, temp_zip, mode = "wb")
-#   
-#   # Extract the contents of the zip file
-#   unzip(temp_zip, exdir = dest_dir)
-#   
-#   # Remove the temporary zip file
-#   unlink(temp_zip)
-# }
-# 
-# download_and_extract_zip("https://archive.ics.uci.edu/static/public/94/spambase.zip", "./data/spambase")
-
-#Importing Spam Data
-spam_data <- read.csv("./data/spambase/spambase.data")
-# dim(spam_data)
-# head(spam_data,3)
-colMax <- function(data) sapply(data, max, na.rm = TRUE)
-max_across_columns <- colMax(spam_data)
-# max_across_columns # we need to normalize the values 
-normalized_data <- scale(spam_data, center = FALSE, scale = apply(spam_data, 2, max) - apply(spam_data, 2, min))
-
-#Importing Names data
-
-spam_names <- readLines("./data/spambase/spambase.names", n = -1, skip = 35)
-spam_names_57 <-tail(spam_names,57) # Taking only required columns
-# cat(spam_names_57, sep = "\n")
-# spam_names_57 
-transposed_df <- t(spam_names_57)# Transposing rows to columns
-# transposed_df
-
-
-
-#Data Cleaning and Analysis
-column_names <- names(spam_data)
-# column_names
-# unique(spam_data$X1)
-# unique(spam_data$X0)
-
-
-# Plotting in graph to see the distribution and find outlier 
-ggplot(spam_data, aes(x = X1)) +
-  geom_bar() +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
-  labs(x = "Spam Or Not", y = "Count", title = "Distribution")
 
 ```
 
-3. **COVID-19 NLP Text Classification Dataset**: The COVID-19 NLP Text Classification dataset on Kaggle consists of tweets related to COVID-19, labeled for sentiment analysis. It includes features like tweet content, sentiment labels (positive, negative, neutral), and additional metadata. This dataset is designed for natural language processing tasks to analyze public sentiment during the pandemic [@datatattle2024covid].
+**COVID-19 NLP Text Classification Dataset**
+
+The COVID-19 NLP Text Classification dataset on Kaggle consists of tweets related to COVID-19, labeled for sentiment analysis. It includes features like tweet content, sentiment labels (positive, negative, neutral), and additional metadata. This dataset is designed for natural language processing tasks to analyze public sentiment during the pandemic [@datatattle2024covid]. An NLP task was chosen because the vector of feature space is sparse and of high dimension.
+
 
 ```{r}
-# Step #1 Data Ingesting into R 
-#download datasets, if necessary
 
-# download_kaggle_dataset("datatattle/covid-19-nlp-text-classification", "./data/covid")
-
-#Importing Train Data
-corona_train <- read.csv("./data/covid/Corona_NLP_train.csv")
-# dim(corona_train)
-# head(corona_train,3)
-
-
-#Importing Test Data 
-
-corona_test <- read.csv("./data/covid/Corona_NLP_test.csv")
-# dim(corona_test)
-# head(corona_test,3)
-
-
-
-#Data Cleaning and Analysis
-column_names <- names(corona_train)
-# column_names
-# unique(corona_train$Sentiment)
-# unique(corona_train$Location)
-na_counts <- colSums(is.na(corona_train))
-# na_counts
-
-
-# Load the ggplot2 package
-# Plotting in graph to see the distribution and find outlier 
-ggplot(corona_train, aes(x = Sentiment)) +
-  geom_bar() +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
-  labs(x = "Sentiment", y = "Count", title = "Distribution")
-
-corona_train_limit <- corona_train[, c("OriginalTweet", "Sentiment")]
-
-# print(corona_train_limit)
-
-
-#install.packages("tidytext")
-
-### Cleaning Steps ##
-
-# Remove URLs
-
-# corona_train_limit$OriginalTweet <- gsub("http\\S+|www\\S+", "", corona_train_limit$OriginalTweet)
-
-# Convert to lower
-# corona_train_limit$OriginalTweet <- tolower(corona_train_limit$OriginalTweet)
-
-# Remove Spaces
-#corona_train_limit$OriginalTweet <- gsub("\\s+", " ", corona_train_limit$OriginalTweet)
-
-#Remove Special Characters, # and @
-#corona_train_limit$OriginalTweet <- gsub("[^a-zA-Z\\s]", "", corona_train_limit$OriginalTweet)
-# corona_train_limit$OriginalTweet <- gsub("#\\w+", "", corona_train_limit$OriginalTweet)
-# corona_train_limit$OriginalTweet <- gsub("@\\w+", "", corona_train_limit$OriginalTweet)
-
-
-#Tokenize the tweets
-
-
-# Word tokenization
-# corona_train_limit$OriginalTweet_Token <- tokenize_words(corona_train_limit$OriginalTweet)
-# print(corona_train_limit)
 ```
 
-## Data and Visualization
 
-## Statistical Modeling
+
+### Statistical Modeling
+
+For each classification task, we held out 30% of the data at random. We evaluated performance on four metrics: f1 score on the holdout set, difference between f1 score on the training and holdout set, number of variables selected, and average change in selected variables. To examine variation in selected variables for the last performance metric, we generated datasets of equal size to the training data by randomly selecting records with replacement from the training data.
+
+To establish a baseline for performance, we first trained a multinomial logistic regression model using all available variables. We then use the four selection methods, training a multinomial logistic regression model on the features selected with each method. 
+
+We used 10-fold cross validation accuracy to select the variables in all methods requiring a validation dataset (RFE, LASSO).
 
 # Experiment 2: Selection Bias {#experiment-2}
 ## Methods
