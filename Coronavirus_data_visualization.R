@@ -4,6 +4,7 @@ library(quanteda)
 library(caret)
 library(e1071)
 library(wordcloud)
+library(ggplot2)
 # Step #1 Data Ingesting into R 
 # download datasets, if necessary
 
@@ -16,13 +17,7 @@ corona_train <- read.csv("./data/covid/Corona_NLP_train.csv")[, c("OriginalTweet
 # Importing Test Data
 corona_test <- read.csv("./data/covid/Corona_NLP_test.csv")[, c("OriginalTweet", "Sentiment")]
 
-# Load ggplot2 package
-# Plotting in graph to see the distribution and find outlier
-library(ggplot2)
-ggplot(corona_train, aes(x = Sentiment)) +
-  geom_bar() +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
-  labs(x = "Sentiment", y = "Count", title = "Distribution")
+
 
 # Recode Sentiment to factors
 corona_train <- corona_train %>%
@@ -36,6 +31,8 @@ corona_test <- corona_test %>%
                             "Extremely Negative" = "Negative",
                             "Extremely Positive" = "Positive"),
          Sentiment = factor(Sentiment, levels = c("Negative", "Neutral", "Positive")))
+
+
 
 # Preprocessing and tokenization using quanteda
 preprocess_text <- function(text_column) {
@@ -62,24 +59,24 @@ test_dfm <- preprocess_text(corona_test$OriginalTweet)
 train_data <- convert(train_dfm, to = "data.frame")
 test_data <- convert(dfm_match(test_dfm, features = featnames(train_dfm)), to = "data.frame") 
 
+# Plotting in graph to see the distribution and find outlier
+
+ggplot(corona_train, aes(x = Sentiment)) +
+  geom_bar() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  labs(x = "Sentiment", y = "Count", title = "Distribution of Sentiment Labels")
+
 
 # Calculate and visualize mean, standard deviation, and range of tokens per document
 token_counts <- rowSums(train_dfm)
-mean_tokens <- mean(token_counts)
-median_tokens <- median(token_counts)
-sd_tokens <- sd(token_counts)
-range_tokens <- range(token_counts)
 
-train_stats <- data.frame(
-  Mean = mean_tokens,
-  SD = sd_tokens,
-  Min = range_tokens[1],
-  median = median_tokens,
-  Max = range_tokens[2]
-)
 
-print("Token statistics for training data:")
-print(train_stats)
+ggplot(data = data.frame(token_counts), aes(x = token_counts)) +
+  geom_histogram(binwidth = 5, color = "black") +
+  labs(title = "Histogram of Token Counts",
+       x = "Token Counts",
+       y = "Frequency") 
+
 
 # Calculate and report sparsity
 num_columns <- ncol(train_dfm)

@@ -1,6 +1,6 @@
 ---
-title: "Feature Selection: An Exploration of Algorithm Performance, Selection Bias, and Multicollinearity "
-author: "Jason Case, Abhishek Dugar. Daniel Nkuah, Khoa Tran"
+title: "Feature Selection: An Exploration of Algorithm Performance"
+author: "Jason Case, Abhishek Dugar, Daniel Nkuah, Khoa Tran"
 date: '`r Sys.Date()`'
 format:
   html:
@@ -64,14 +64,9 @@ In more recent developments, multiple criteria decision-making (MCDM) methods ha
  
 The trajectory of feature selection in machine learning illustrates a progression from simple, univariate methods to sophisticated, model-based approaches that address complex issues like multicollinearity and multi-criteria decision making. Early skepticism about "data dredging" has given way to an appreciation of the nuanced techniques necessary for robust predictive modeling. Feature selection methods have evolved to include similarity-based, information-theoretical-based, sparse-learning-based, statistical-based, filter, wrapper, embedded, hybrid, supervised, semi-supervised, and unsupervised approaches. Modern methods, such as neural networks, further enhance the accuracy and efficiency of feature selection, ensuring that only the most relevant features are utilized. As the field continues to advance, it is clear that feature selection will remain a cornerstone of machine learning, improving model performance and reducing computational complexity across a wide range of applications.
 
-**Experiments**
 
-Our exploration of feature selection will begin by comparing the performance of various feature selection methods on a variety of real-world datasets ([Experiment 1](#experiment-1)). We will look at four different aspects of performance: overall model performance on the holdout set, variance in performance between the training and holdout set, stability in the features selected, and parsimony of the final model. We will then examine feature selection bias of various methods by generating datasets with known parameters and determining if there is a systematic pattern to the features that are selected or omitted ([Experiment 2](#experiment-2)). Finally, we will examine the impact of multicollinearity on the feature selection process ([Experiment 3](#experiment-3)).
-
-# Experiment 1: Performance Comparison {#experiment-1}
-## Methods
-
-We explored an algorithm from each category of feature selection methods.
+# Methods
+Our exploration of feature selection will begin by comparing the performance of various feature selection methods on a variety of real-world datasets. We will look at four different aspects of performance: overall model performance on the holdout set, variance in performance between the training and holdout set, stability in the features selected, and parsimony of the final model. We explored an algorithm from each category of feature selection methods.
 
 **Correlation - Based Feature Selection (CFS)**
 
@@ -124,9 +119,9 @@ where $t$ is the upper bound for the sum of the coefficients [@buhlmann2011stati
 
 For the hybrid method, we will combine the filter and wrapper methods; first filtering using the correlation coefficient and then removing variables iteratively using RFE.
 
-## Analysis and Results
+# Analysis and Results
 
-### Data and Visualization
+## Data and Visualization
 
 We evaluated the performance of the methods on several classification tasks. The datasets and associated tasks used were:
 
@@ -135,7 +130,7 @@ We evaluated the performance of the methods on several classification tasks. The
 The Birds' Songs Numeric Dataset on Kaggle contains numeric representations of bird songs, aimed at facilitating audio classification tasks. The dataset includes multiple features extracted from the audio files, such as spectral properties and time-domain characteristics, enabling machine learning models to analyze and classify different bird species based on their songs [@fleanend2024birds]. This dataset was selected because it contains all numeric predictor variables.
 
 ```{r}
-
+print("R code currently in separate notebook")
 ```
 
 **Spambase Dataset**
@@ -143,7 +138,7 @@ The Birds' Songs Numeric Dataset on Kaggle contains numeric representations of b
 The Spambase dataset from the UCI Machine Learning Repository contains 4601 instances of emails, with 57 features for classification tasks to determine whether an email is spam (1) or not (0). Features include word and character frequency counts, as well as measures of consecutive capital letters. It is commonly used for building and testing spam detection models [@misc_spambase_94]. This dataset was selected because it contains a mix of numeric and categorical predictor variables.
 
 ```{r}
-
+print("R code currently in separate notebook")
 ```
 
 **COVID-19 NLP Text Classification Dataset**
@@ -158,6 +153,7 @@ library(quanteda)
 library(caret)
 library(e1071)
 library(wordcloud)
+library(ggplot2)
 # Step #1 Data Ingesting into R 
 # download datasets, if necessary
 
@@ -170,13 +166,7 @@ corona_train <- read.csv("./data/covid/Corona_NLP_train.csv")[, c("OriginalTweet
 # Importing Test Data
 corona_test <- read.csv("./data/covid/Corona_NLP_test.csv")[, c("OriginalTweet", "Sentiment")]
 
-# Load ggplot2 package
-# Plotting in graph to see the distribution and find outlier
-library(ggplot2)
-ggplot(corona_train, aes(x = Sentiment)) +
-  geom_bar() +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
-  labs(x = "Sentiment", y = "Count", title = "Distribution")
+
 
 # Recode Sentiment to factors
 corona_train <- corona_train %>%
@@ -190,6 +180,8 @@ corona_test <- corona_test %>%
                             "Extremely Negative" = "Negative",
                             "Extremely Positive" = "Positive"),
          Sentiment = factor(Sentiment, levels = c("Negative", "Neutral", "Positive")))
+
+
 
 # Preprocessing and tokenization using quanteda
 preprocess_text <- function(text_column) {
@@ -216,24 +208,24 @@ test_dfm <- preprocess_text(corona_test$OriginalTweet)
 train_data <- convert(train_dfm, to = "data.frame")
 test_data <- convert(dfm_match(test_dfm, features = featnames(train_dfm)), to = "data.frame") 
 
+# Plotting in graph to see the distribution and find outlier
+
+ggplot(corona_train, aes(x = Sentiment)) +
+  geom_bar() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  labs(x = "Sentiment", y = "Count", title = "Distribution of Sentiment Labels")
+
 
 # Calculate and visualize mean, standard deviation, and range of tokens per document
 token_counts <- rowSums(train_dfm)
-mean_tokens <- mean(token_counts)
-median_tokens <- median(token_counts)
-sd_tokens <- sd(token_counts)
-range_tokens <- range(token_counts)
 
-train_stats <- data.frame(
-  Mean = mean_tokens,
-  SD = sd_tokens,
-  Min = range_tokens[1],
-  median = median_tokens,
-  Max = range_tokens[2]
-)
 
-print("Token statistics for training data:")
-print(train_stats)
+ggplot(data = data.frame(token_counts), aes(x = token_counts)) +
+  geom_histogram(binwidth = 5, color = "black") +
+  labs(title = "Histogram of Token Counts",
+       x = "Token Counts",
+       y = "Frequency") 
+
 
 # Calculate and report sparsity
 num_columns <- ncol(train_dfm)
@@ -251,7 +243,7 @@ wordcloud(names(word_freq), freq = word_freq, max.words = 100, random.order = FA
 
 
 
-### Statistical Modeling
+## Statistical Modeling
 
 For each classification task, we held out 30% of the data at random. We evaluated performance on four metrics: f1 score on the holdout set, difference between f1 score on the training and holdout set, number of variables selected, and average change in selected variables. To examine variation in selected variables for the last performance metric, we generated datasets of equal size to the training data by randomly selecting records with replacement from the training data.
 
@@ -259,27 +251,188 @@ To establish a baseline for performance, we first trained a multinomial logistic
 
 We used 10-fold cross validation accuracy to select the variables in all methods requiring a validation dataset (RFE, LASSO).
 
-# Experiment 2: Selection Bias {#experiment-2}
-## Methods
-
-## Analysis and Results
-
-## Data and Visualization
-
-## Statistical Modeling
-
-# Experiment 3: Multicollinearity {#experiment-3}
-## Methods
-
-## Analysis and Results
-
-## Data and Visualization
-
-## Statistical Modeling
-
 ```{r}
-
+print("R code currently in separate notebook")
 ```
+
+
+<table>
+<caption>Table 2. Overall f1 score on holdout set</caption>
+  <tr>
+    <th>Method</th>
+    <th colspan="3">Dataset</th>
+  </tr>
+  <tr>
+    <th></th>
+    <th>Birds' Songs</th>
+    <th>Spambase</th>
+    <th>COVID-19 </th>
+  </tr>
+  <tr>
+    <td>Baseline</td>
+    <td>0</td>
+    <td>0</td>
+    <td>0</td>
+  </tr>
+  <tr>
+    <td>CFS</td>
+    <td>0</td>
+    <td>0</td>
+    <td>0</td>
+  </tr>
+  <tr>
+    <td>RFE</td>
+    <td>0</td>
+    <td>0</td>
+    <td>0</td>
+  </tr>
+  <tr>
+    <td>LASSO</td>
+    <td>0</td>
+    <td>0</td>
+    <td>0</td>
+  </tr>
+  <tr>
+    <td>CFS + RFE</td>
+    <td>0</td>
+    <td>0</td>
+    <td>0</td>
+  </tr>
+</table>
+
+
+<table>
+<caption>Table 3. Difference between f1 score on the training and holdout set</caption>
+  <tr>
+    <th>Method</th>
+    <th colspan="3">Dataset</th>
+  </tr>
+  <tr>
+    <th></th>
+    <th>Birds' Songs</th>
+    <th>Spambase</th>
+    <th>COVID-19 </th>
+  </tr>
+  <tr>
+    <td>Baseline</td>
+    <td>0</td>
+    <td>0</td>
+    <td>0</td>
+  </tr>
+  <tr>
+    <td>CFS</td>
+    <td>0</td>
+    <td>0</td>
+    <td>0</td>
+  </tr>
+  <tr>
+    <td>RFE</td>
+    <td>0</td>
+    <td>0</td>
+    <td>0</td>
+  </tr>
+  <tr>
+    <td>LASSO</td>
+    <td>0</td>
+    <td>0</td>
+    <td>0</td>
+  </tr>
+  <tr>
+    <td>CFS + RFE</td>
+    <td>0</td>
+    <td>0</td>
+    <td>0</td>
+  </tr>
+</table>
+
+<table>
+<caption>Table 4. Number of variables selected</caption>
+  <tr>
+    <th>Method</th>
+    <th colspan="3">Dataset</th>
+  </tr>
+  <tr>
+    <th></th>
+    <th>Birds' Songs</th>
+    <th>Spambase</th>
+    <th>COVID-19 </th>
+  </tr>
+  <tr>
+    <td>Baseline</td>
+    <td>0</td>
+    <td>0</td>
+    <td>0</td>
+  </tr>
+  <tr>
+    <td>CFS</td>
+    <td>0</td>
+    <td>0</td>
+    <td>0</td>
+  </tr>
+  <tr>
+    <td>RFE</td>
+    <td>0</td>
+    <td>0</td>
+    <td>0</td>
+  </tr>
+  <tr>
+    <td>LASSO</td>
+    <td>0</td>
+    <td>0</td>
+    <td>0</td>
+  </tr>
+  <tr>
+    <td>CFS + RFE</td>
+    <td>0</td>
+    <td>0</td>
+    <td>0</td>
+  </tr>
+</table>
+
+<table>
+<caption>Table 5. Average change in selected variables</caption>
+  <tr>
+    <th>Method</th>
+    <th colspan="3">Dataset</th>
+  </tr>
+  <tr>
+    <th></th>
+    <th>Birds' Songs</th>
+    <th>Spambase</th>
+    <th>COVID-19 </th>
+  </tr>
+  <tr>
+    <td>Baseline</td>
+    <td>0</td>
+    <td>0</td>
+    <td>0</td>
+  </tr>
+  <tr>
+    <td>CFS</td>
+    <td>0</td>
+    <td>0</td>
+    <td>0</td>
+  </tr>
+  <tr>
+    <td>RFE</td>
+    <td>0</td>
+    <td>0</td>
+    <td>0</td>
+  </tr>
+  <tr>
+    <td>LASSO</td>
+    <td>0</td>
+    <td>0</td>
+    <td>0</td>
+  </tr>
+  <tr>
+    <td>CFS + RFE</td>
+    <td>0</td>
+    <td>0</td>
+    <td>0</td>
+  </tr>
+</table>
+
 
 # Conclusion
 
