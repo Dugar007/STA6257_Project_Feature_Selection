@@ -3,15 +3,7 @@ library(dplyr)
 library(quanteda)
 library(caret)
 library(e1071)
-# library(parallel)
-# library(foreach)
-# library(doParallel)
-
-# Setup parallel processing
-# num_cores <- detectCores() - 1 # Use one less than the total number of cores
-# cl <- makeCluster(num_cores)
-# registerDoParallel(cl)
-
+library(wordcloud)
 # Step #1 Data Ingesting into R 
 # download datasets, if necessary
 
@@ -20,11 +12,9 @@ library(e1071)
 set.seed(42)
 # Importing Train Data
 corona_train <- read.csv("./data/covid/Corona_NLP_train.csv")[, c("OriginalTweet", "Sentiment")]
-# corona_train <- sample_frac(corona_train, .5)
 
 # Importing Test Data
 corona_test <- read.csv("./data/covid/Corona_NLP_test.csv")[, c("OriginalTweet", "Sentiment")]
-# corona_test <- sample_frac(corona_test, .5)
 
 # Load ggplot2 package
 # Plotting in graph to see the distribution and find outlier
@@ -64,32 +54,42 @@ preprocess_text <- function(text_column) {
   return(dfm)
 }
 
-# Parallelized preprocessing
-train_dfm <- preprocess_text(corona_train$OriginalTweet)
+
+train_dfm <- dfm_trim(preprocess_text(corona_train$OriginalTweet), min_termfreq = 10)
 test_dfm <- preprocess_text(corona_test$OriginalTweet)
 
 # Convert DFM to data frame
-train_data <- convert(dfm_trim(train_dfm, min_termfreq = 10), to = "data.frame")
+train_data <- convert(train_dfm, to = "data.frame")
 test_data <- convert(dfm_match(test_dfm, features = featnames(train_dfm)), to = "data.frame") 
 
-# Add the Sentiment column
-train_data$Sentiment <- corona_train$Sentiment
-test_data$Sentiment <- corona_test$Sentiment
 
-# Train a Naive Bayes model without cross-validation
-model <- naiveBayes(Sentiment ~ ., data = train_data)
+# Calculate and visualize mean, standard deviation, and range of tokens per document
+token_counts <- rowSums(train_dfm)
+mean_tokens <- mean(token_counts)
+median_tokens <- median(token_counts)
+sd_tokens <- sd(token_counts)
+range_tokens <- range(token_counts)
 
-# Predict on the training data
-train_predictions <- predict(model, newdata = train_data)
+train_stats <- data.frame(
+  Mean = mean_tokens,
+  SD = sd_tokens,
+  Min = range_tokens[1],
+  median = median_tokens,
+  Max = range_tokens[2]
+)
 
-# Predict on the test data
-test_predictions <- predict(model, newdata = test_data)
+print("Token statistics for training data:")
+print(train_stats)
 
-# Confusion matrix to evaluate the performance
-confusionMatrix(train_predictions, train_data$Sentiment)
-confusionMatrix(test_predictions, test_data$Sentiment)
+# Calculate and report sparsity
+num_columns <- ncol(train_dfm)
+num_nonzero <- sum(train_dfm@x != 0)
+total_elements <- prod(dim(train_dfm))
+sparsity <- ((total_elements - num_nonzero) / total_elements) * 100
 
-# Stop the cluster
-# stopCluster(cl)
-# registerDoSEQ()
+cat("Number of columns in the training dataset:", num_columns, "\n")
+cat("Average percent of values that are 0 in the training dataset:", sparsity, "%\n")
 
+# Create a word frequency cloud
+word_freq <- colSums(train_dfm)
+wordcloud(names(word_freq), freq = word_freq, max.words = 100, random.order = FALSE, colors = brewer.pal(8, "Dark2"))
