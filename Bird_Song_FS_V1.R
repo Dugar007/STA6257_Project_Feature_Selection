@@ -38,15 +38,15 @@
 
 #Importing Train Data
 
-#bird_train <- read.csv("./data/birds/train.csv")
-bird_train <-read.csv("C:/IMP_LEARNING/Masters/Advanced Statistical Modeling/R_Coding/bird_train.csv")
+bird_train <- read.csv("./data/birds/train.csv")
+# bird_train <-read.csv("C:/IMP_LEARNING/Masters/Advanced Statistical Modeling/R_Coding/bird_train.csv")
 dim(bird_train)
 head(bird_train,3)
 
 #Importing Test Data 
 
-#bird_test <- read.csv("./data/birds/test.csv")
-bird_test <- read.csv("C:/IMP_LEARNING/Masters/Advanced Statistical Modeling/R_Coding/bird_test.csv")
+bird_test <- read.csv("./data/birds/test.csv")
+# bird_test <- read.csv("C:/IMP_LEARNING/Masters/Advanced Statistical Modeling/R_Coding/bird_test.csv")
 
 dim(bird_test)
 head(bird_test,3)
@@ -98,7 +98,7 @@ dim(numeric_bird_test)
 ## Filter Methods Filter methods select features based on statistical measures ##
 
 # Load necessary packages
-#install.packages("corrr")
+# install.packages("corrr")
 #install.packages("caret")
 library(corrr)
 library(caret)

@@ -20,17 +20,20 @@ corona_test <- read.csv("./data/covid/Corona_NLP_test.csv")[, c("OriginalTweet",
 
 
 # Recode Sentiment to factors
+# Recode Sentiment to factors
 corona_train <- corona_train %>%
+  filter(Sentiment != "Neutral") %>%
   mutate(Sentiment = recode(Sentiment,
                             "Extremely Negative" = "Negative",
                             "Extremely Positive" = "Positive"),
-         Sentiment = factor(Sentiment, levels = c("Negative", "Neutral", "Positive")))
+         Sentiment = factor(Sentiment, levels = c("Negative", "Positive")))
 
 corona_test <- corona_test %>%
+  filter(Sentiment != "Neutral") %>%
   mutate(Sentiment = recode(Sentiment,
                             "Extremely Negative" = "Negative",
                             "Extremely Positive" = "Positive"),
-         Sentiment = factor(Sentiment, levels = c("Negative", "Neutral", "Positive")))
+         Sentiment = factor(Sentiment, levels = c("Negative", "Positive")))
 
 
 

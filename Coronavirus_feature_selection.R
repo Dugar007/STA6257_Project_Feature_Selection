@@ -1,16 +1,16 @@
-# Load necessary libraries
+## Load necessary libraries
 library(dplyr)
 library(quanteda)
 library(caret)
-library(e1071)
-# library(parallel)
-# library(foreach)
-# library(doParallel)
+# library(e1071)
+library(wordcloud)
+library(ggplot2)
+library(glmnet)
+library(doParallel)
 
-# Setup parallel processing
-# num_cores <- detectCores() - 1 # Use one less than the total number of cores
-# cl <- makeCluster(num_cores)
-# registerDoParallel(cl)
+# Create and register the cluster
+cl <- makeCluster(8)
+registerDoParallel(cl)
 
 # Step #1 Data Ingesting into R 
 # download datasets, if necessary
@@ -20,32 +20,26 @@ library(e1071)
 set.seed(42)
 # Importing Train Data
 corona_train <- read.csv("./data/covid/Corona_NLP_train.csv")[, c("OriginalTweet", "Sentiment")]
-# corona_train <- sample_frac(corona_train, .5)
+# corona_train <- sample_frac(corona_train, .1)
 
 # Importing Test Data
 corona_test <- read.csv("./data/covid/Corona_NLP_test.csv")[, c("OriginalTweet", "Sentiment")]
-# corona_test <- sample_frac(corona_test, .5)
-
-# Load ggplot2 package
-# Plotting in graph to see the distribution and find outlier
-library(ggplot2)
-ggplot(corona_train, aes(x = Sentiment)) +
-  geom_bar() +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
-  labs(x = "Sentiment", y = "Count", title = "Distribution")
+# corona_test <- sample_frac(corona_test, .1)
 
 # Recode Sentiment to factors
 corona_train <- corona_train %>%
+  filter(Sentiment != "Neutral") %>%
   mutate(Sentiment = recode(Sentiment,
                             "Extremely Negative" = "Negative",
                             "Extremely Positive" = "Positive"),
-         Sentiment = factor(Sentiment, levels = c("Negative", "Neutral", "Positive")))
+         Sentiment = factor(Sentiment, levels = c("Negative", "Positive")))
 
 corona_test <- corona_test %>%
+  filter(Sentiment != "Neutral") %>%
   mutate(Sentiment = recode(Sentiment,
                             "Extremely Negative" = "Negative",
                             "Extremely Positive" = "Positive"),
-         Sentiment = factor(Sentiment, levels = c("Negative", "Neutral", "Positive")))
+         Sentiment = factor(Sentiment, levels = c("Negative", "Positive")))
 
 # Preprocessing and tokenization using quanteda
 preprocess_text <- function(text_column) {
@@ -64,32 +58,181 @@ preprocess_text <- function(text_column) {
   return(dfm)
 }
 
-# Parallelized preprocessing
-train_dfm <- preprocess_text(corona_train$OriginalTweet)
-test_dfm <- preprocess_text(corona_test$OriginalTweet)
+train_dfm <- dfm_trim(preprocess_text(corona_train$OriginalTweet), min_termfreq = 10)
+test_dfm <- dfm_match(preprocess_text(corona_test$OriginalTweet), features = featnames(train_dfm))
 
-# Convert DFM to data frame
-train_data <- convert(dfm_trim(train_dfm, min_termfreq = 10), to = "data.frame")
-test_data <- convert(dfm_match(test_dfm, features = featnames(train_dfm)), to = "data.frame") 
+# Convert DFM to sparse matrix
+train_sparse <- as(train_dfm, "dgCMatrix")
+test_sparse <- as(test_dfm, "dgCMatrix")
 
-# Add the Sentiment column
-train_data$Sentiment <- corona_train$Sentiment
-test_data$Sentiment <- corona_test$Sentiment
+# Convert Sentiment to numeric for glmnet
+y_train_numeric <- as.numeric(corona_train$Sentiment) - 1
+y_test_numeric <- as.numeric(corona_test$Sentiment) - 1
 
-# Train a Naive Bayes model without cross-validation
-model <- naiveBayes(Sentiment ~ ., data = train_data)
+# Fit the logistic regression model with glmnet
+model <- glmnet(
+  train_sparse, 
+  y_train_numeric, 
+  family = "binomial", 
+  parallel = TRUE
+)
 
-# Predict on the training data
-train_predictions <- predict(model, newdata = train_data)
+# Predict on training and test datasets
+train_predictions_prob <- predict(model, train_sparse, s = min(model$lambda), type = "response")
+test_predictions_prob <- predict(model, test_sparse, s = min(model$lambda), type = "response")
 
-# Predict on the test data
-test_predictions <- predict(model, newdata = test_data)
+# Convert probabilities to class labels (0 or 1)
+train_predictions <- factor(ifelse(train_predictions_prob > 0.5, "Positive", "Negative"), levels = c("Negative", "Positive"))
+test_predictions <- factor(ifelse(test_predictions_prob > 0.5, "Positive", "Negative"), levels = c("Negative", "Positive"))
 
-# Confusion matrix to evaluate the performance
-confusionMatrix(train_predictions, train_data$Sentiment)
-confusionMatrix(test_predictions, test_data$Sentiment)
+# Calculate F1 score function
+calculate_f1 <- function(actual, predicted) {
+  confusion <- confusionMatrix(predicted, actual)
+  f1 <- confusion$byClass["F1"]
+  return(f1)
+}
 
-# Stop the cluster
-# stopCluster(cl)
-# registerDoSEQ()
+# Calculate F1 scores for training and test datasets
+train_f1_score <- calculate_f1(corona_train$Sentiment, train_predictions)
+test_f1_score <- calculate_f1(corona_test$Sentiment, test_predictions)
 
+# Calculate the number of features
+num_features <- ncol(train_sparse)
+
+coefficients <- coef(model, s = min(model$lambda))
+non_zero_features <- sum(coefficients != 0) - 1  # Subtract 1 for the intercept
+
+# Calculate the difference in F1 score between train and test data
+f1_difference <- train_f1_score - test_f1_score
+
+# Print the results
+cat("Number of features:", num_features, "\n")
+cat("Number of non-zero features:", non_zero_features, "\n")
+cat("F1 score on training data:", train_f1_score, "\n")
+cat("F1 score on test data:", test_f1_score, "\n")
+cat("Difference in F1 score between train and test data:", f1_difference, "\n")
+
+
+
+#Correlation feature selection
+
+correlations <- apply(train_sparse, 2, function(x) cor(x, y_train_numeric))
+max_corr <- max(abs(correlations))
+
+# Step 2: Select features based on a correlation threshold
+select_features <- function(threshold) {
+  selected_features <- which(abs(correlations) > threshold)
+  return(selected_features)
+}
+
+# Step 3: Sweep through various thresholds and perform 5-fold cross-validation
+thresholds <- seq(0, max_corr, length.out = 10)
+cv_results <- data.frame(threshold = numeric(), mean_f1 = numeric())
+
+for (threshold in thresholds) {
+  selected_features <- select_features(threshold)
+  
+  if (length(selected_features) == 0) {
+    next
+  }
+  
+  train_sparse_selected <- train_sparse[, selected_features, drop = FALSE]
+  
+  if (ncol(train_sparse_selected) < 2) {
+    next
+  }
+  
+  # Perform 5-fold cross-validation
+  train_control <- trainControl(method = "cv", number = 5, verboseIter = TRUE)
+  
+  f1_scores <- c()
+  
+  # Define custom F1 score summary function
+  f1_summary <- function(data, lev = NULL, model = NULL) {
+    confusion <- confusionMatrix(data$pred, data$obs)
+    f1 <- confusion$byClass["F1"]
+    c(F1 = f1)
+  }
+  
+  for (i in 1:5) {
+    folds <- createFolds(y_train_numeric, k = 5, list = TRUE, returnTrain = TRUE)
+    f1_fold <- c()
+    
+    for (j in 1:5) {
+      train_index <- folds[[j]]
+      test_index <- setdiff(seq_len(nrow(train_sparse_selected)), train_index)
+      
+      x_train_cv <- train_sparse_selected[train_index, ]
+      y_train_cv <- y_train_numeric[train_index]
+      x_test_cv <- train_sparse_selected[test_index, ]
+      y_test_cv <- y_train_numeric[test_index]
+      
+      model_cv <- glmnet(x_train_cv, y_train_cv, family = "binomial", parallel = TRUE)
+      
+      pred_cv <- predict(model_cv, x_test_cv, s = min(model_cv$lambda), type = "response")
+      pred_cv <- factor(ifelse(pred_cv > 0.5, "Positive", "Negative"), levels = c("Negative", "Positive"))
+      actual_cv <- factor(ifelse(y_test_cv == 1, "Positive", "Negative"), levels = c("Negative", "Positive"))
+      
+      f1_fold <- c(f1_fold, calculate_f1(actual_cv, pred_cv))
+    }
+    
+    f1_scores <- c(f1_scores, mean(f1_fold))
+  }
+  
+  cv_results <- rbind(cv_results, data.frame(threshold = threshold, mean_f1 = mean(f1_scores)))
+}
+
+# Determine the optimal threshold
+optimal_threshold <- cv_results$threshold[which.max(cv_results$mean_f1)]
+
+# Step 4: Use the optimal threshold to train the final model
+selected_features <- select_features(optimal_threshold)
+train_sparse_selected <- train_sparse[, selected_features]
+test_sparse_selected <- test_sparse[, selected_features]
+
+final_model <- glmnet(train_sparse_selected, y_train_numeric, family = "binomial", parallel = TRUE)
+
+
+# Predict on training and test datasets
+train_predictions_prob <- predict(final_model, train_sparse_selected, s = min(final_model$lambda), type = "response")
+test_predictions_prob <- predict(final_model, test_sparse_selected, s = min(final_model$lambda), type = "response")
+
+# Convert probabilities to class labels (0 or 1)
+train_predictions <- factor(ifelse(train_predictions_prob > 0.5, "Positive", "Negative"), levels = c("Negative", "Positive"))
+test_predictions <- factor(ifelse(test_predictions_prob > 0.5, "Positive", "Negative"), levels = c("Negative", "Positive"))
+
+# Calculate F1 score function
+calculate_f1 <- function(actual, predicted) {
+  confusion <- confusionMatrix(predicted, actual)
+  f1 <- confusion$byClass["F1"]
+  return(f1)
+}
+
+# Calculate F1 scores for training and test datasets
+train_f1_score <- calculate_f1(corona_train$Sentiment, train_predictions)
+test_f1_score <- calculate_f1(corona_test$Sentiment, test_predictions)
+
+# Calculate the number of features
+num_features <- ncol(train_sparse_selected) 
+
+coefficients <- coef(final_model, s = min(final_model$lambda))
+non_zero_features <- sum(coefficients != 0) - 1  # Subtract 1 for the intercept
+
+# Calculate the difference in F1 score between train and test data
+f1_difference <- train_f1_score - test_f1_score
+
+# Print the results
+cat("Maximum Absolute Correlation:", max_corr, "\n")
+cat("Optimal Threshold:", optimal_threshold, "\n")
+cat("Number of features:", num_features, "\n")
+cat("Number of non-zero features:", non_zero_features, "\n")
+cat("F1 score on training data:", train_f1_score, "\n")
+cat("F1 score on test data:", test_f1_score, "\n")
+cat("Difference in F1 score between train and test data:", f1_difference, "\n")
+
+
+# Stop the cluster to clean up resources
+stopCluster(cl)
+
+# Unregister the parallel backend (optional, to ensure no residual registration)
+registerDoSEQ()
