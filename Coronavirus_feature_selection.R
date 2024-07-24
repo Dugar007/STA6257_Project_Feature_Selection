@@ -114,7 +114,7 @@ cat("Difference in F1 score between train and test data:", f1_difference, "\n")
 
 
 
-#Correlation feature selection
+#CORRELATION FEATURE SELECTION
 
 correlations <- apply(train_sparse, 2, function(x) cor(x, y_train_numeric))
 max_corr <- max(abs(correlations))
@@ -192,7 +192,6 @@ test_sparse_selected <- test_sparse[, selected_features]
 
 final_model <- glmnet(train_sparse_selected, y_train_numeric, family = "binomial", parallel = TRUE)
 
-
 # Predict on training and test datasets
 train_predictions_prob <- predict(final_model, train_sparse_selected, s = min(final_model$lambda), type = "response")
 test_predictions_prob <- predict(final_model, test_sparse_selected, s = min(final_model$lambda), type = "response")
@@ -229,6 +228,44 @@ cat("Number of non-zero features:", non_zero_features, "\n")
 cat("F1 score on training data:", train_f1_score, "\n")
 cat("F1 score on test data:", test_f1_score, "\n")
 cat("Difference in F1 score between train and test data:", f1_difference, "\n")
+
+
+# RECURSIVE FEATURE ELIMINATION
+
+
+rfe_glmnet <- function(x, y, sizes, fold = 5, parallel = TRUE) {
+  results <- data.frame(num_features = integer(), mean_f1 = double())
+  control <- rfeControl(functions = caretFuncs, method = "cv", number = fold, verbose = TRUE, allowParallel = parallel)
+  
+  for (size in sizes) {
+    subset <- rfe(x, y, sizes = size, rfeControl = control, method = "glmnet")
+    subset_res <- subset$resample
+    mean_f1 <- mean(subset_res$F1)
+    results <- rbind(results, data.frame(num_features = size, mean_f1 = mean_f1))
+  }
+  
+  best_size <- results$num_features[which.max(results$mean_f1)]
+  return(list(best_size = best_size, results = results))
+}
+
+# Perform recursive feature elimination
+sizes <- seq(10, ncol(train_sparse), length.out = 10)
+rfe_results <- rfe_glmnet(train_sparse, y_train_numeric, sizes = sizes)
+
+cat("Optimal Number of Features:", rfe_results$best_size, "\n")
+
+
+# Select optimal features
+optimal_features <- rfe(train_sparse, y_train_numeric, sizes = rfe_results$best_size, rfeControl = rfeControl(functions = caretFuncs, method = "cv", number = 5, allowParallel = TRUE), method = "glmnet")
+
+# Fit the final model using selected features
+final_model <- glmnet(optimal_features$fit$finalModel$x, y_train_numeric, family = "binomial", parallel = TRUE)
+
+# Predict on training and test datasets
+train_predictions_prob <- predict(final_model, newx = optimal_features$fit$finalModel$x, s = min(final_model$lambda), type = "response")
+test_predictions_prob <- predict(final_model, newx = test_sparse[, optimal_features$optVariables], s = min(final_model$lambda), type = "response")
+
+
 
 
 # Stop the cluster to clean up resources
