@@ -25,11 +25,28 @@ download_and_extract_zip <- function(url, dest_dir) {
 # download_and_extract_zip("https://archive.ics.uci.edu/static/public/94/spambase.zip", "./data/spambase")
 
 #Importing Spam Data
-spam_data <- read.csv("./data/spambase/spambase.data")
+last_57_lines <- tail(readLines("./data/spambase/spambase.names"), 57)
+# Function to extract and sanitize column names
+extract_column_names <- function(line) {
+  # Extract the name before the colon
+  name <- strsplit(line, ":")[[1]][1]
+  # Sanitize the name by replacing special characters with underscores
+  sanitized_name <- gsub("[^a-zA-Z0-9_]", "_", name)
+  return(sanitized_name)
+}
+
+# Apply the function to each line to get the column names
+raw_column_names <- c(sapply(last_57_lines, extract_column_names), 'flag_spam')
+
+
+# Ensure unique column names
+unique_column_names <- make.unique(raw_column_names)
+spam_data <- read.csv("./data/spambase/spambase.data", header = FALSE, col.names = unique_column_names) %>%
+  mutate(flag_spam = factor(flag_spam, levels = c(0, 1)))
 
 
 # Plotting in graph to see the distribution and find outlier 
-ggplot(spam_data, aes(x = X1)) +
+ggplot(spam_data, aes(x = flag_spam)) +
   geom_bar() +
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
   labs(x = "Spam Or Not", y = "Count", title = "Distribution")

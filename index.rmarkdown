@@ -16,6 +16,7 @@ editor:
   markdown: 
     wrap: 72
 ---
+
 # Introduction
 The discipline of feature selection in machine learning has evolved significantly over the past few decades, transforming from a practice once stigmatized as "data dredging" to an essential component of modern predictive modeling. Early methods for variable selection were initially met with skepticism by the statistical community, which viewed them as potentially spurious means of uncovering patterns in data. These reservations stemmed from concerns about overfitting and the robustness of statistical inferences drawn from such techniques.
  
@@ -121,6 +122,7 @@ For the hybrid method, we will combine the filter and wrapper methods; first fil
 
 # Analysis and Results
 
+
 ```{r}
 #| include: false
 #environment setup (hidden from output)
@@ -131,10 +133,6 @@ library(wordcloud)
 library(ggplot2)
 library(glmnet)
 library(doParallel)
-library(jsonlite)
-
-# Global parameter to force overwriting of existing cache files
-FORCE_OVERWRITE <- FALSE
 
 numCores <- max(c(1, detectCores() - 2))
 cl <- makeCluster(numCores)
@@ -188,72 +186,13 @@ download_and_extract_zip <- function(url, dest_dir) {
   unlink(temp_zip)
 }
 
-# Function to cache parameters
-cache_parameter <- function(name, value = NULL, path = "cache/", prefix = "param_") {
-  # Ensure the cache directory exists
-  if (!dir.exists(path)) {
-    dir.create(path, recursive = TRUE)
-  }
-  
-  # Construct the full file name
-  file_name <- paste0(path, prefix, name, ".json")
-  
-  # Check for file existence
-  if (file.exists(file_name) && !FORCE_OVERWRITE) {
-      # Load and return the value from the file
-      cached_value <- fromJSON(file_name)
-      # Cast to the appropriate type
-      if (cached_value$type == "numeric") {
-        return(as.numeric(cached_value$value))
-      } else if (cached_value$type == "integer") {
-        return(as.integer(cached_value$value))
-      } else if (cached_value$type == "list") {
-        return(as.list(cached_value$value))
-      } else if (cached_value$type == "vector_numeric") {
-        return(as.numeric(cached_value$value))
-      } else if (cached_value$type == "vector_integer") {
-        return(as.integer(cached_value$value))
-      } else {
-        stop("Unsupported cached value type.")
-      }
-    } else {
-      cached_value <- NULL
-    }
-
-  if (is.null(value)) {
-    return(cached_value)
-  } else
-  {
-    # Determine the type of the value and write it to the file
-    if (is.numeric(value) && length(value) == 1) {
-      value_type <- "numeric"
-    } else if (is.integer(value) && length(value) == 1) {
-      value_type <- "integer"
-    } else if (is.list(value)) {
-      value_type <- "list"
-    } else if (is.numeric(value) && length(value) > 1) {
-      value_type <- "vector_numeric"
-    } else if (is.integer(value) && length(value) > 1) {
-      value_type <- "vector_integer"
-    } else {
-      stop("Unsupported value type. Only numeric, integer, vectors, and list are supported.")
-    }
-    # Write the value to the file as JSON
-    write_json(list(type = value_type, value = value), file_name)
-    
-    # Return the value
-    return(value)
-  }
-  
-
-}
-
 # download datasets, if necessary
 # download_and_extract_zip("https://archive.ics.uci.edu/static/public/94/spambase.zip", "./data/spambase")
 # download_kaggle_dataset("datatattle/covid-19-nlp-text-classification", "./data/covid")
 # download_kaggle_dataset("fleanend/birds-songs-numeric-dataset", "./data/birds")
 
 ```
+
 
 ## Data and Visualization
 
@@ -263,13 +202,16 @@ We evaluated the performance of the methods on several classification tasks. The
 
 The Birds' Songs Numeric Dataset on Kaggle contains numeric representations of bird songs, aimed at facilitating audio classification tasks. The dataset includes multiple features extracted from the audio files, such as spectral properties and time-domain characteristics, enabling machine learning models to analyze and classify different bird species based on their songs [@fleanend2024birds]. This dataset was selected because it contains all numeric predictor variables.
 
+
 ```{r}
 print("R code currently in separate notebook")
 ```
 
+
 **Spambase Dataset**
 
 The Spambase dataset from the UCI Machine Learning Repository contains 4601 instances of emails, with 57 features for classification tasks to determine whether an email is spam (1) or not (0). Features include word and character frequency counts, as well as measures of consecutive capital letters. It is commonly used for building and testing spam detection models [@misc_spambase_94]. This dataset was selected because it contains a mix of numeric and categorical predictor variables.
+
 
 ```{r}
 #Importing Spam Data
@@ -300,9 +242,11 @@ ggplot(spam_data, aes(x = flag_spam)) +
   labs(x = "Spam Or Not", y = "Count", title = "Distribution")
 ```
 
+
 **COVID-19 NLP Text Classification Dataset**
 
 The COVID-19 NLP Text Classification dataset on Kaggle consists of tweets related to COVID-19, labeled for sentiment analysis. It includes features like tweet content, sentiment labels (positive, negative, neutral), and additional metadata. This dataset is designed for natural language processing tasks to analyze public sentiment during the pandemic [@datatattle2024covid]. An NLP task was chosen because the vector of feature space is sparse and of high dimension.
+
 
 
 ```{r}
@@ -394,6 +338,7 @@ wordcloud(names(word_freq), freq = word_freq, max.words = 100, random.order = FA
 
 
 
+
 ## Statistical Modeling
 
 For each classification task, we held out 30% of the data at random. We evaluated performance on four metrics: f1 score on the holdout set, difference between f1 score on the training and holdout set, number of variables selected, and average change in selected variables. To examine variation in selected variables for the last performance metric, we generated datasets of equal size to the training data by randomly selecting records with replacement from the training data.
@@ -403,11 +348,14 @@ To establish a baseline for performance, we first trained a multinomial logistic
 We used 10-fold cross validation accuracy to select the variables in all methods requiring a validation dataset (RFE, LASSO).
 
 **Birds' Songs Numeric Dataset**
+
 ```{r}
 print("R code currently in separate notebook")
 ```
 
+
 **Spambase Dataset**
+
 ```{r}
 
 # Create a train-test split
@@ -498,66 +446,62 @@ select_features <- function(threshold) {
 percentiles <- seq(0, 1, length.out = 20)
 thresholds <- quantile(abs_correlations, percentiles)
 cv_results <- data.frame(threshold = numeric(), mean_f1 = numeric())
-optimal_threshold <- cache_parameter('Spambase_cfs_optimal_threshold')
-if (is.null(optimal_threshold)) {
-  for (threshold in thresholds) {
-    selected_features <- select_features(threshold)
-    
-    if (length(selected_features) == 0) {
-      next
-    }
-    
-    X_train_selected <- X_train[, selected_features, drop = FALSE]
-    
-    if (ncol(X_train_selected) < 2) {
-      next
-    }
-    
-    # Perform k-fold cross-validation
-    train_control <- trainControl(method = "cv", number = validation_folds, verboseIter = TRUE)
-    
-    f1_scores <- c()
-    
-    # Define custom F1 score summary function
-    f1_summary <- function(data, lev = NULL, model = NULL) {
-      confusion <- confusionMatrix(data$pred, data$obs)
-      f1 <- confusion$byClass["F1"]
-      c(F1 = f1)
-    }
-    
-    for (i in 1:validation_folds) {
-      folds <- createFolds(y_train, k = validation_folds, list = TRUE, returnTrain = TRUE)
-      f1_fold <- c()
-      
-      for (j in 1:validation_folds) {
-        train_index <- folds[[j]]
-        test_index <- setdiff(seq_len(nrow(X_train_selected)), train_index)
-        
-        x_train_cv <- X_train_selected[train_index, ]
-        y_train_cv <- y_train[train_index]
-        x_test_cv <- X_train_selected[test_index, ]
-        y_test_cv <- y_train[test_index]
-        
-        model_cv <- glmnet(x_train_cv, y_train_cv, alpha = baseline_alpha, maxit = baseline_maxit, lambda.min.ratio = baseline_lambda, family = "binomial", parallel = TRUE)
-        
-        pred_cv <- predict(model_cv, x_test_cv, s = min(model_cv$lambda), type = "response")
-        pred_cv <- factor(ifelse(pred_cv > 0.5, 0, 1), levels = c(0, 1))
-        actual_cv <- factor(ifelse(y_test_cv == 1, 1, 0), levels = c(0, 1))
-        
-        f1_fold <- c(f1_fold, calculate_f1(actual_cv, pred_cv))
-      }
-      
-      f1_scores <- c(f1_scores, mean(f1_fold))
-    }
-    
-    cv_results <- rbind(cv_results, data.frame(threshold = threshold, mean_f1 = mean(f1_scores)))
+
+for (threshold in thresholds) {
+  selected_features <- select_features(threshold)
+  
+  if (length(selected_features) == 0) {
+    next
   }
   
-  # Determine the optimal threshold
-  optimal_threshold <-  cache_parameter('Spambase_cfs_optimal_threshold', cv_results$threshold[which.max(cv_results$mean_f1)]) 
+  X_train_selected <- X_train[, selected_features, drop = FALSE]
+  
+  if (ncol(X_train_selected) < 2) {
+    next
+  }
+  
+  # Perform k-fold cross-validation
+  train_control <- trainControl(method = "cv", number = validation_folds, verboseIter = TRUE)
+  
+  f1_scores <- c()
+  
+  # Define custom F1 score summary function
+  f1_summary <- function(data, lev = NULL, model = NULL) {
+    confusion <- confusionMatrix(data$pred, data$obs)
+    f1 <- confusion$byClass["F1"]
+    c(F1 = f1)
+  }
+  
+  for (i in 1:validation_folds) {
+    folds <- createFolds(y_train, k = validation_folds, list = TRUE, returnTrain = TRUE)
+    f1_fold <- c()
+    
+    for (j in 1:validation_folds) {
+      train_index <- folds[[j]]
+      test_index <- setdiff(seq_len(nrow(X_train_selected)), train_index)
+      
+      x_train_cv <- X_train_selected[train_index, ]
+      y_train_cv <- y_train[train_index]
+      x_test_cv <- X_train_selected[test_index, ]
+      y_test_cv <- y_train[test_index]
+      
+      model_cv <- glmnet(x_train_cv, y_train_cv, alpha = baseline_alpha, maxit = baseline_maxit, lambda.min.ratio = baseline_lambda, family = "binomial", parallel = TRUE)
+      
+      pred_cv <- predict(model_cv, x_test_cv, s = min(model_cv$lambda), type = "response")
+      pred_cv <- factor(ifelse(pred_cv > 0.5, 0, 1), levels = c(0, 1))
+      actual_cv <- factor(ifelse(y_test_cv == 1, 1, 0), levels = c(0, 1))
+      
+      f1_fold <- c(f1_fold, calculate_f1(actual_cv, pred_cv))
+    }
+    
+    f1_scores <- c(f1_scores, mean(f1_fold))
+  }
+  
+  cv_results <- rbind(cv_results, data.frame(threshold = threshold, mean_f1 = mean(f1_scores)))
 }
 
-
+# Determine the optimal threshold
+optimal_threshold <- cv_results$threshold[which.max(cv_results$mean_f1)]
 
 # Step 4: Use the optimal threshold to train the final model
 selected_features <- select_features(optimal_threshold)
@@ -668,16 +612,11 @@ generate_sizes <- function(start_size, end_size, num_steps) {
 
 # Perform recursive feature elimination
 sizes <- generate_sizes(ncol(X_train), 100, 20)
-
-best_features <- cache_parameter('Spambase_rfe_best_features')
-if (is.null(best_features)) {
-  rfe_results <- custom_rfe(X_train, y_train, sizes = sizes)
-  best_features <- cache_parameter('Spambase_rfe_best_features', rfe_results$best_features)
-}
+rfe_results <- custom_rfe(X_train, y_train, sizes = sizes)
 
 # Fit the final model using selected features
-X_train_selected = X_train[, best_features, drop=FALSE]
-X_test_selected = X_test[, best_features, drop=FALSE]
+X_train_selected = X_train[, rfe_results$best_features, drop=FALSE]
+X_test_selected = X_test[, rfe_results$best_features, drop=FALSE]
 final_model <- glmnet(X_train_selected, y_train, family = "binomial", alpha = baseline_alpha, maxit = baseline_maxit, lambda.min.ratio = baseline_lambda)
 
 # Predict on training and test datasets
@@ -710,11 +649,11 @@ cat("F1 score on test data:", test_f1_score, "\n")
 cat("Difference in F1 score between train and test data:", f1_difference, "\n")
 
 #LASSO REGRESSION
-best_lambda <- cache_parameter('Spambase_lasso_best_lambda')
-if (is.null(best_lambda)) {
-  cv_lasso <- cv.glmnet(X_train, y_train, family = "binomial", alpha = 1, maxit = baseline_maxit, nfolds = validation_folds)
-  best_lambda <- cache_parameter('Spambase_lasso_best_lambda', cv_lasso$lambda.min)
-}
+
+cv_lasso <- cv.glmnet(X_train, y_train, family = "binomial", alpha = 1, maxit = baseline_maxit, nfolds = validation_folds)
+
+# Extract the best lambda value
+best_lambda <- cv_lasso$lambda.min
 
 # Fit the final Lasso model using the best lambda
 final_model <- glmnet(X_train, y_train, family = "binomial", maxit = baseline_maxit, alpha = 1, lambda = best_lambda)
@@ -748,23 +687,17 @@ cat("Difference in F1 score between train and test data:", f1_difference, "\n")
 #CFS + RFE REGRESSION
 
 correlation_threshold = thresholds[5]
-best_features <- cache_parameter('Spambase_cfs_rfe_best_features')
-if (is.null(best_features)) {
-  cfs_selected_features <- select_features(correlation_threshold)
-  
-  X_train_cfs_selected <- X_train[, cfs_selected_features, drop = FALSE]
-  
-  # Perform recursive feature elimination
-  sizes <- generate_sizes(ncol(X_train_cfs_selected), 100, 20)
-  rfe_results <- custom_rfe(X_train_cfs_selected, y_train, sizes = sizes)
-  
-  best_features <- cache_parameter('Spambase_cfs_rfe_best_features', rfe_results$best_features)
-}
+cfs_selected_features <- select_features(correlation_threshold)
 
+X_train_cfs_selected <- X_train[, cfs_selected_features, drop = FALSE]
+
+# Perform recursive feature elimination
+sizes <- generate_sizes(ncol(X_train_cfs_selected), 100, 20)
+rfe_results <- custom_rfe(X_train_cfs_selected, y_train, sizes = sizes)
 
 # Fit the final model using selected features
-X_train_selected = X_train[, best_features, drop=FALSE]
-X_test_selected = X_test[, best_features, drop=FALSE]
+X_train_selected = X_train[, rfe_results$best_features, drop=FALSE]
+X_test_selected = X_test[, rfe_results$best_features, drop=FALSE]
 final_model <- glmnet(X_train_selected, y_train, family = "binomial", alpha = baseline_alpha, maxit = baseline_maxit, lambda.min.ratio = baseline_lambda)
 
 # Predict on training and test datasets
@@ -798,7 +731,9 @@ cat("F1 score on test data:", test_f1_score, "\n")
 cat("Difference in F1 score between train and test data:", f1_difference, "\n")
 ```
 
+
 **COVID-19 NLP Text Classification Dataset**
+
 ```{r}
 # Fit the logistic regression model with glmnet
 baseline_lambda = 0
@@ -870,65 +805,61 @@ percentiles <- seq(0, 1, length.out = 20)
 thresholds <- quantile(abs_correlations, percentiles)
 cv_results <- data.frame(threshold = numeric(), mean_f1 = numeric())
 
-optimal_threshold <- cache_parameter('covid_cfs_optimal_threshold')
-if (is.null(optimal_threshold)) {
-  for (threshold in thresholds) {
-    selected_features <- select_features(threshold)
-    
-    if (length(selected_features) == 0) {
-      next
-    }
-    
-    train_sparse_selected <- train_sparse[, selected_features, drop = FALSE]
-    
-    if (ncol(train_sparse_selected) < 2) {
-      next
-    }
-    
-    # Perform k-fold cross-validation
-    train_control <- trainControl(method = "cv", number = validation_folds, verboseIter = TRUE)
-    
-    f1_scores <- c()
-    
-    # Define custom F1 score summary function
-    f1_summary <- function(data, lev = NULL, model = NULL) {
-      confusion <- confusionMatrix(data$pred, data$obs)
-      f1 <- confusion$byClass["F1"]
-      c(F1 = f1)
-    }
-    
-    for (i in 1:validation_folds) {
-      folds <- createFolds(y_train, k = validation_folds, list = TRUE, returnTrain = TRUE)
-      f1_fold <- c()
-      
-      for (j in 1:validation_folds) {
-        train_index <- folds[[j]]
-        test_index <- setdiff(seq_len(nrow(train_sparse_selected)), train_index)
-        
-        x_train_cv <- train_sparse_selected[train_index, ]
-        y_train_cv <- y_train[train_index]
-        x_test_cv <- train_sparse_selected[test_index, ]
-        y_test_cv <- y_train[test_index]
-        
-        model_cv <- glmnet(x_train_cv, y_train_cv, alpha = baseline_alpha, maxit = baseline_maxit, lambda.min.ratio = baseline_lambda, family = "binomial", parallel = TRUE)
-        
-        pred_cv <- predict(model_cv, x_test_cv, s = min(model_cv$lambda), type = "response")
-        pred_cv <- factor(ifelse(pred_cv > 0.5, "Positive", "Negative"), levels = c("Negative", "Positive"))
-        actual_cv <- factor(ifelse(y_test_cv == 1, "Positive", "Negative"), levels = c("Negative", "Positive"))
-        
-        f1_fold <- c(f1_fold, calculate_f1(actual_cv, pred_cv))
-      }
-      
-      f1_scores <- c(f1_scores, mean(f1_fold))
-    }
-    
-    cv_results <- rbind(cv_results, data.frame(threshold = threshold, mean_f1 = mean(f1_scores)))
+for (threshold in thresholds) {
+  selected_features <- select_features(threshold)
+  
+  if (length(selected_features) == 0) {
+    next
   }
   
-  # Determine the optimal threshold
-  optimal_threshold <- cache_parameter('covid_cfs_optimal_threshold', cv_results$threshold[which.max(cv_results$mean_f1)])
+  train_sparse_selected <- train_sparse[, selected_features, drop = FALSE]
+  
+  if (ncol(train_sparse_selected) < 2) {
+    next
+  }
+  
+  # Perform k-fold cross-validation
+  train_control <- trainControl(method = "cv", number = validation_folds, verboseIter = TRUE)
+  
+  f1_scores <- c()
+  
+  # Define custom F1 score summary function
+  f1_summary <- function(data, lev = NULL, model = NULL) {
+    confusion <- confusionMatrix(data$pred, data$obs)
+    f1 <- confusion$byClass["F1"]
+    c(F1 = f1)
+  }
+  
+  for (i in 1:validation_folds) {
+    folds <- createFolds(y_train, k = validation_folds, list = TRUE, returnTrain = TRUE)
+    f1_fold <- c()
+    
+    for (j in 1:validation_folds) {
+      train_index <- folds[[j]]
+      test_index <- setdiff(seq_len(nrow(train_sparse_selected)), train_index)
+      
+      x_train_cv <- train_sparse_selected[train_index, ]
+      y_train_cv <- y_train[train_index]
+      x_test_cv <- train_sparse_selected[test_index, ]
+      y_test_cv <- y_train[test_index]
+      
+      model_cv <- glmnet(x_train_cv, y_train_cv, alpha = baseline_alpha, maxit = baseline_maxit, lambda.min.ratio = baseline_lambda, family = "binomial", parallel = TRUE)
+      
+      pred_cv <- predict(model_cv, x_test_cv, s = min(model_cv$lambda), type = "response")
+      pred_cv <- factor(ifelse(pred_cv > 0.5, "Positive", "Negative"), levels = c("Negative", "Positive"))
+      actual_cv <- factor(ifelse(y_test_cv == 1, "Positive", "Negative"), levels = c("Negative", "Positive"))
+      
+      f1_fold <- c(f1_fold, calculate_f1(actual_cv, pred_cv))
+    }
+    
+    f1_scores <- c(f1_scores, mean(f1_fold))
+  }
+  
+  cv_results <- rbind(cv_results, data.frame(threshold = threshold, mean_f1 = mean(f1_scores)))
 }
 
+# Determine the optimal threshold
+optimal_threshold <- cv_results$threshold[which.max(cv_results$mean_f1)]
 
 # Step 4: Use the optimal threshold to train the final model
 selected_features <- select_features(optimal_threshold)
@@ -1036,18 +967,14 @@ generate_sizes <- function(start_size, end_size, num_steps) {
   return(round(sizes))
 }
 
-# Perform recursive feature elimination
-sizes <- generate_sizes(ncol(X_train), 100, 20)
 
-best_features <- cache_parameter('covid_rfe_best_features')
-if (is.null(best_features)) {
-  rfe_results <- custom_rfe(train_sparse, y_train, sizes = sizes)
-  best_features <- cache_parameter('covid_rfe_best_features', rfe_results$best_features)
-}
+# Perform recursive feature elimination
+sizes <- generate_sizes(ncol(train_sparse), 100, 20)
+rfe_results <- custom_rfe(train_sparse, y_train, sizes = sizes)
 
 # Fit the final model using selected features
-train_sparse_selected = train_sparse[, best_features, drop=FALSE]
-test_sparse_selected = test_sparse[, best_features, drop=FALSE]
+train_sparse_selected = train_sparse[, rfe_results$best_features, drop=FALSE]
+test_sparse_selected = test_sparse[, rfe_results$best_features, drop=FALSE]
 final_model <- glmnet(train_sparse_selected, y_train, family = "binomial", alpha = baseline_alpha, maxit = baseline_maxit, lambda.min.ratio = baseline_lambda)
 
 # Predict on training and test datasets
@@ -1081,11 +1008,10 @@ cat("Difference in F1 score between train and test data:", f1_difference, "\n")
 
 #LASSO REGRESSION
 
-best_lambda <- cache_parameter('covid_lasso_best_lambda')
-if (is.null(best_lambda)) {
-  cv_lasso <- cv.glmnet(train_sparse, y_train, family = "binomial", alpha = 1, maxit = baseline_maxit, nfolds = validation_folds)
-  best_lambda <- cache_parameter('covid_lasso_best_lambda', cv_lasso$lambda.min)
-}
+cv_lasso <- cv.glmnet(train_sparse, y_train, family = "binomial", alpha = 1, maxit = baseline_maxit, nfolds = validation_folds)
+
+# Extract the best lambda value
+best_lambda <- cv_lasso$lambda.min
 
 # Fit the final Lasso model using the best lambda
 final_model <- glmnet(train_sparse, y_train, family = "binomial", maxit = baseline_maxit, alpha = 1, lambda = best_lambda)
@@ -1117,23 +1043,19 @@ cat("Difference in F1 score between train and test data:", f1_difference, "\n")
 
 
 #CFS + RFE REGRESSION
-correlation_threshold = thresholds[5]
-best_features <- cache_parameter('covid_cfs_rfe_best_features')
-if (is.null(best_features)) {
-  cfs_selected_features <- select_features(correlation_threshold)
-  
-  train_sparse_cfs_selected <- train_sparse[, cfs_selected_features, drop = FALSE]
 
-  # Perform recursive feature elimination
-  sizes <- generate_sizes(ncol(train_sparse_cfs_selected), 100, 20)
-  rfe_results <- custom_rfe(train_sparse_cfs_selected, y_train, sizes = sizes)
-  
-  best_features <- cache_parameter('covid_cfs_rfe_best_features', rfe_results$best_features)
-}
+correlation_threshold = thresholds[5]
+cfs_selected_features <- select_features(correlation_threshold)
+
+train_sparse_cfs_selected <- train_sparse[, cfs_selected_features, drop = FALSE]
+
+# Perform recursive feature elimination
+sizes <- generate_sizes(ncol(train_sparse_cfs_selected), 100, 20)
+rfe_results <- custom_rfe(train_sparse_cfs_selected, y_train, sizes = sizes)
 
 # Fit the final model using selected features
-train_sparse_selected = train_sparse[, best_features, drop=FALSE]
-test_sparse_selected = test_sparse[, best_features, drop=FALSE]
+train_sparse_selected = train_sparse[, rfe_results$best_features, drop=FALSE]
+test_sparse_selected = test_sparse[, rfe_results$best_features, drop=FALSE]
 final_model <- glmnet(train_sparse_selected, y_train, family = "binomial", alpha = baseline_alpha, maxit = baseline_maxit, lambda.min.ratio = baseline_lambda)
 
 # Predict on training and test datasets
@@ -1166,6 +1088,7 @@ cat("F1 score on training data:", train_f1_score, "\n")
 cat("F1 score on test data:", test_f1_score, "\n")
 cat("Difference in F1 score between train and test data:", f1_difference, "\n")
 ```
+
 
 
 <table>
@@ -1345,6 +1268,7 @@ cat("Difference in F1 score between train and test data:", f1_difference, "\n")
   </tr>
 </table>
 
+
 ```{r}
 #| include: false
 #environment cleanup (hidden from output)
@@ -1355,9 +1279,11 @@ stopCluster(cl)
 registerDoSEQ()
 ```
 
+
 # Conclusion
 
 # References
+
 
 
 
