@@ -6,7 +6,7 @@ library(doParallel)
 library(jsonlite)
 
 # Global parameter to force overwriting of existing cache files
-FORCE_OVERWRITE <- TRUE
+FORCE_OVERWRITE <- FALSE
 
 numCores <- max(c(1, detectCores() - 2))
 cl <- makeCluster(numCores)

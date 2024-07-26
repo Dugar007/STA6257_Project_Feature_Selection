@@ -30,14 +30,26 @@ download_kaggle_dataset <- function(dataset, path) {
 
 # download_kaggle_dataset("fleanend/birds-songs-numeric-dataset", "./data/birds")
 
-#Importing Train Data
-bird_train <- read.csv("./data/birds/train.csv")
+#Importing Data
+bird_data <- rbind(read.csv("./data/birds/train.csv"), read.csv("./data/birds/test.csv")) %>%
+  filter(species %in% c('europaeus', 'schoenobaenus')) %>%
+  mutate(species = factor(species, levels = c('europaeus', 'schoenobaenus'))) %>%
+  select(-c(id, genus))
 
-#Importing Test Data 
-bird_test <- read.csv("./data/birds/test.csv")
+#Importing Data
+bird_train <- read.csv("./data/birds/train.csv") %>%
+  filter(species %in% species_levels) %>%
+  mutate(species = factor(species, levels = species_levels)) %>%
+  select(-c(id, genus))
+
+bird_test<- read.csv("./data/birds/test.csv") %>%
+  filter(species %in% species_levels) %>%
+  mutate(species = factor(species, levels = species_levels)) %>%
+  select(-c(id, genus))
+
 
 # Plotting in graph to see the distribution and find outlier 
-ggplot(bird_train, aes(x = species)) +
+ggplot(bird_test, aes(x = species)) +
   geom_bar() +
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
   labs(x = "Species", y = "Count", title = "Distribution")

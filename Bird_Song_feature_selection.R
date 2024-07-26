@@ -1,17 +1,16 @@
-## Load necessary libraries
 library(dplyr)
-library(quanteda)
 library(caret)
 library(glmnet)
 library(doParallel)
 library(jsonlite)
 
-# Global parameter to force overwriting of existing cache files
-FORCE_OVERWRITE <- TRUE
 
-numCores <- max(c(1, detectCores() - 2))
-cl <- makeCluster(numCores)
-registerDoParallel(cl)
+# Global parameter to force overwriting of existing cache files
+FORCE_OVERWRITE <- FALSE
+
+# numCores <- max(c(1, detectCores() - 2))
+# cl <- makeCluster(numCores)
+# registerDoParallel(cl)
 
 # Function to cache parameters
 cache_parameter <- function(name, value = NULL, path = "cache/", prefix = "param_") {
@@ -71,62 +70,63 @@ cache_parameter <- function(name, value = NULL, path = "cache/", prefix = "param
   }
 }
 
-# Step #1 Data Ingesting into R 
-# download datasets, if necessary
-
-# download_kaggle_dataset("datatattle/covid-19-nlp-text-classification", "./data/covid")
 
 set.seed(42)
-# Importing Train Data
-corona_train <- read.csv("./data/covid/Corona_NLP_train.csv")[, c("OriginalTweet", "Sentiment")]
-# corona_train <- sample_frac(corona_train, .1)
 
-# Importing Test Data
-corona_test <- read.csv("./data/covid/Corona_NLP_test.csv")[, c("OriginalTweet", "Sentiment")]
-# corona_test <- sample_frac(corona_test, .1)
 
-# Recode Sentiment to factors
-corona_train <- corona_train %>%
-  filter(Sentiment != "Neutral") %>%
-  mutate(Sentiment = recode(Sentiment,
-                            "Extremely Negative" = "Negative",
-                            "Extremely Positive" = "Positive"),
-         Sentiment = factor(Sentiment, levels = c("Negative", "Positive")))
-
-corona_test <- corona_test %>%
-  filter(Sentiment != "Neutral") %>%
-  mutate(Sentiment = recode(Sentiment,
-                            "Extremely Negative" = "Negative",
-                            "Extremely Positive" = "Positive"),
-         Sentiment = factor(Sentiment, levels = c("Negative", "Positive")))
-
-# Preprocessing and tokenization using quanteda
-preprocess_text <- function(text_column) {
-  tokens <- tokens(text_column, 
-                   what = "word", 
-                   remove_punct = TRUE, 
-                   remove_numbers = TRUE,
-                   remove_symbols = TRUE) %>%
-    tokens_tolower() %>%
-    tokens_remove(stopwords("english")) %>%
-    tokens_wordstem()
+# Step #1 Data Ingesting into R 
+# download datasets, if necessary
+download_kaggle_dataset <- function(dataset, path) {
+  # Check if the kaggle command is available
+  if (system("which kaggle", intern = TRUE) == "") {
+    stop("Kaggle API is not installed or not in PATH. Please install it first.")
+  }
   
-  # Create a Document-Feature Matrix (DFM)
-  dfm <- dfm(tokens)
+  # Ensure the destination directory exists
+  if (!dir.exists(path)) {
+    dir.create(path, recursive = TRUE)
+  }
   
-  return(dfm)
+  # Construct the download command
+  command <- sprintf("kaggle datasets download -d %s -p %s", dataset, path)
+  
+  # Execute the command
+  system(command)
+  
+  # Unzip the downloaded file
+  zipfile <- list.files(path, pattern = "*.zip", full.names = TRUE)
+  if (length(zipfile) > 0) {
+    unzip(zipfile, exdir = path)
+    file.remove(zipfile)
+  }
 }
 
-train_dfm <- dfm_trim(preprocess_text(corona_train$OriginalTweet), min_termfreq = 10)
-test_dfm <- dfm_match(preprocess_text(corona_test$OriginalTweet), features = featnames(train_dfm))
+# download_kaggle_dataset("fleanend/birds-songs-numeric-dataset", "./data/birds")
+species_levels <- c('europaeus', 'schoenobaenus')
 
-# Convert DFM to sparse matrix
-train_sparse <- as(train_dfm, "dgCMatrix")
-test_sparse <- as(test_dfm, "dgCMatrix")
+#Importing Data
+bird_train <- read.csv("./data/birds/train.csv") %>%
+  filter(species %in% species_levels) %>%
+  mutate(species = factor(species, levels = species_levels)) %>%
+  select(-c(id, genus))
 
-# Convert Sentiment to numeric for glmnet
-y_train <- corona_train$Sentiment
-y_test <- corona_test$Sentiment
+bird_test<- read.csv("./data/birds/test.csv") %>%
+  filter(species %in% species_levels) %>%
+  mutate(species = factor(species, levels = species_levels)) %>%
+  select(-c(id, genus))
+
+
+X_train_raw <- bird_train %>% select(-species)
+X_test_raw  <- bird_test %>% select(-species)
+
+y_train  <- bird_train$species
+y_test <- bird_test$species
+
+# scale the data, calculate all two-way interactions, and drop the intercept
+preprocess_params <- preProcess(X_train_raw, method = c("center", "scale"))
+
+X_train <- as.matrix(predict(preprocess_params, X_train_raw))
+X_test <- as.matrix(predict(preprocess_params, X_test_raw))
 
 # Fit the logistic regression model with glmnet
 baseline_lambda = 0
@@ -135,7 +135,7 @@ baseline_alpha = 0
 validation_folds = 10
 
 baseline_model <- glmnet(
-  train_sparse, 
+  X_train, 
   y_train, 
   family = "binomial", 
   alpha = baseline_alpha,
@@ -145,12 +145,12 @@ baseline_model <- glmnet(
 )
 
 # Predict on training and test datasets
-train_predictions_prob <- predict(baseline_model, train_sparse, s = min(baseline_model$lambda), type = "response")
-test_predictions_prob <- predict(baseline_model, test_sparse, s = min(baseline_model$lambda), type = "response")
+train_predictions_prob <- predict(baseline_model, X_train, s = min(baseline_model$lambda), type = "response")
+test_predictions_prob <- predict(baseline_model, X_test, s = min(baseline_model$lambda), type = "response")
 
 # Convert probabilities to class labels (0 or 1)
-train_predictions <- factor(ifelse(train_predictions_prob > 0.5, "Positive", "Negative"), levels = c("Negative", "Positive"))
-test_predictions <- factor(ifelse(test_predictions_prob > 0.5, "Positive", "Negative"), levels = c("Negative", "Positive"))
+train_predictions <- factor(ifelse(train_predictions_prob > 0.5, species_levels[2], species_levels[1]), levels = species_levels)
+test_predictions <- factor(ifelse(test_predictions_prob > 0.5, species_levels[2], species_levels[1]), levels = species_levels)
 
 # Calculate F1 score function
 calculate_f1 <- function(actual, predicted) {
@@ -159,12 +159,16 @@ calculate_f1 <- function(actual, predicted) {
   return(f1)
 }
 
+
+confusion <- confusionMatrix(test_predictions, bird_test$species)
+
+
 # Calculate F1 scores for training and test datasets
-train_f1_score <- calculate_f1(corona_train$Sentiment, train_predictions)
-test_f1_score <- calculate_f1(corona_test$Sentiment, test_predictions)
+train_f1_score <- calculate_f1(bird_train$species, train_predictions)
+test_f1_score <- calculate_f1(bird_test$species, test_predictions)
 
 # Calculate the number of features
-num_features <- ncol(train_sparse)
+num_features <- ncol(X_train)
 
 coefficients <- coef(baseline_model, s = min(baseline_model$lambda))
 non_zero_features <- sum(coefficients != 0) - 1  # Subtract 1 for the intercept
@@ -184,7 +188,7 @@ cat("Difference in F1 score between train and test data:", f1_difference, "\n")
 
 #CORRELATION FEATURE SELECTION
 
-correlations <- apply(train_sparse, 2, function(x) cor(x, as.numeric(y_train)))
+correlations <- apply(X_train, 2, function(x) cor(x, as.numeric(y_train)))
 abs_correlations <- abs(correlations)
 
 # Step 2: Select features based on a correlation threshold
@@ -197,8 +201,7 @@ select_features <- function(threshold) {
 percentiles <- seq(0, 1, length.out = 20)
 thresholds <- quantile(abs_correlations, percentiles)
 cv_results <- data.frame(threshold = numeric(), mean_f1 = numeric())
-
-optimal_threshold <- cache_parameter('covid_cfs_optimal_threshold')
+optimal_threshold <- cache_parameter('bird_cfs_optimal_threshold')
 if (is.null(optimal_threshold)) {
   for (threshold in thresholds) {
     selected_features <- select_features(threshold)
@@ -207,9 +210,9 @@ if (is.null(optimal_threshold)) {
       next
     }
     
-    train_sparse_selected <- train_sparse[, selected_features, drop = FALSE]
+    X_train_selected <- X_train[, selected_features, drop = FALSE]
     
-    if (ncol(train_sparse_selected) < 2) {
+    if (ncol(X_train_selected) < 2) {
       next
     }
     
@@ -231,18 +234,18 @@ if (is.null(optimal_threshold)) {
       
       for (j in 1:validation_folds) {
         train_index <- folds[[j]]
-        test_index <- setdiff(seq_len(nrow(train_sparse_selected)), train_index)
+        test_index <- setdiff(seq_len(nrow(X_train_selected)), train_index)
         
-        x_train_cv <- train_sparse_selected[train_index, ]
+        x_train_cv <- X_train_selected[train_index, ]
         y_train_cv <- y_train[train_index]
-        x_test_cv <- train_sparse_selected[test_index, ]
+        x_test_cv <- X_train_selected[test_index, ]
         y_test_cv <- y_train[test_index]
         
         model_cv <- glmnet(x_train_cv, y_train_cv, alpha = baseline_alpha, maxit = baseline_maxit, lambda.min.ratio = baseline_lambda, family = "binomial", parallel = TRUE)
         
         pred_cv <- predict(model_cv, x_test_cv, s = min(model_cv$lambda), type = "response")
-        pred_cv <- factor(ifelse(pred_cv > 0.5, "Positive", "Negative"), levels = c("Negative", "Positive"))
-        actual_cv <- factor(ifelse(y_test_cv == 1, "Positive", "Negative"), levels = c("Negative", "Positive"))
+        pred_cv <- factor(ifelse(pred_cv > 0.5, 0, 1), levels = c(0, 1))
+        actual_cv <- factor(ifelse(y_test_cv == 1, 1, 0), levels = c(0, 1))
         
         f1_fold <- c(f1_fold, calculate_f1(actual_cv, pred_cv))
       }
@@ -254,31 +257,32 @@ if (is.null(optimal_threshold)) {
   }
   
   # Determine the optimal threshold
-  optimal_threshold <- cache_parameter('covid_cfs_optimal_threshold', cv_results$threshold[which.max(cv_results$mean_f1)])
+  optimal_threshold <-  cache_parameter('bird_cfs_optimal_threshold', cv_results$threshold[which.max(cv_results$mean_f1)]) 
 }
+
 
 
 # Step 4: Use the optimal threshold to train the final model
 selected_features <- select_features(optimal_threshold)
-train_sparse_selected <- train_sparse[, selected_features]
-test_sparse_selected <- test_sparse[, selected_features]
+X_train_selected <- X_train[, selected_features]
+X_test_selected <- X_test[, selected_features]
 
-final_model <- glmnet(train_sparse_selected, y_train, family = "binomial", alpha = baseline_alpha, maxit = baseline_maxit, lambda.min.ratio = baseline_lambda, parallel = TRUE)
+final_model <- glmnet(X_train_selected, y_train, family = "binomial", alpha = baseline_alpha, maxit = baseline_maxit, lambda.min.ratio = baseline_lambda, parallel = TRUE)
 
 # Predict on training and test datasets
-train_predictions_prob <- predict(final_model, train_sparse_selected, s = min(final_model$lambda), type = "response")
-test_predictions_prob <- predict(final_model, test_sparse_selected, s = min(final_model$lambda), type = "response")
+train_predictions_prob <- predict(final_model, X_train_selected, s = min(final_model$lambda), type = "response")
+test_predictions_prob <- predict(final_model, X_test_selected, s = min(final_model$lambda), type = "response")
 
 # Convert probabilities to class labels (0 or 1)
-train_predictions <- factor(ifelse(train_predictions_prob > 0.5, "Positive", "Negative"), levels = c("Negative", "Positive"))
-test_predictions <- factor(ifelse(test_predictions_prob > 0.5, "Positive", "Negative"), levels = c("Negative", "Positive"))
+train_predictions <- factor(ifelse(train_predictions_prob > 0.5, 1, 0), levels = c(0, 1))
+test_predictions <- factor(ifelse(test_predictions_prob > 0.5, 1, 0), levels = c(0, 1))
 
 # Calculate F1 scores for training and test datasets
-train_f1_score <- calculate_f1(corona_train$Sentiment, train_predictions)
-test_f1_score <- calculate_f1(corona_test$Sentiment, test_predictions)
+train_f1_score <- calculate_f1(bird_train$species, train_predictions)
+test_f1_score <- calculate_f1(bird_test$species, test_predictions)
 
 # Calculate the number of features
-num_features <- ncol(train_sparse_selected) 
+num_features <- ncol(X_train_selected) 
 
 coefficients <- coef(final_model, s = min(final_model$lambda))
 non_zero_features <- sum(coefficients != 0) - 1  # Subtract 1 for the intercept
@@ -338,7 +342,7 @@ custom_rfe <- function(x, y, sizes, fold = validation_folds, parallel = TRUE) {
       }
       
       pred_cv_prob <- predict(model_cv, x_test_cv, s = min(model_cv$lambda), type = "response")
-      pred_cv <- factor(ifelse(pred_cv_prob > 0.5, "Positive", "Negative"), levels = c("Negative", "Positive"))
+      pred_cv <- factor(ifelse(pred_cv_prob > 0.5, 1, 0), levels = c(0, 1))
       
       f1 <- calculate_f1(y_test_cv, pred_cv)
       f1_scores <- c(f1_scores, f1)
@@ -364,35 +368,36 @@ generate_sizes <- function(start_size, end_size, num_steps) {
   return(round(sizes))
 }
 
-# Perform recursive feature elimination
-sizes <- generate_sizes(ncol(train_sparse), 100, 20)
 
-best_features <- cache_parameter('covid_rfe_best_features')
+# Perform recursive feature elimination
+sizes <- generate_sizes(ncol(X_train), 100, 20)
+
+best_features <- cache_parameter('bird_rfe_best_features')
 if (is.null(best_features)) {
-  rfe_results <- custom_rfe(train_sparse, y_train, sizes = sizes)
-  best_features <- cache_parameter('covid_rfe_best_features', rfe_results$best_features)
+  rfe_results <- custom_rfe(X_train, y_train, sizes = sizes)
+  best_features <- cache_parameter('bird_rfe_best_features', rfe_results$best_features)
 }
 
 # Fit the final model using selected features
-train_sparse_selected = train_sparse[, best_features, drop=FALSE]
-test_sparse_selected = test_sparse[, best_features, drop=FALSE]
-final_model <- glmnet(train_sparse_selected, y_train, family = "binomial", alpha = baseline_alpha, maxit = baseline_maxit, lambda.min.ratio = baseline_lambda)
+X_train_selected = X_train[, best_features, drop=FALSE]
+X_test_selected = X_test[, best_features, drop=FALSE]
+final_model <- glmnet(X_train_selected, y_train, family = "binomial", alpha = baseline_alpha, maxit = baseline_maxit, lambda.min.ratio = baseline_lambda)
 
 # Predict on training and test datasets
-train_predictions_prob <- predict(final_model, newx = train_sparse_selected, s = min(final_model$lambda), type = "response")
-test_predictions_prob <- predict(final_model, newx = test_sparse_selected, s = min(final_model$lambda), type = "response")
+train_predictions_prob <- predict(final_model, newx = X_train_selected, s = min(final_model$lambda), type = "response")
+test_predictions_prob <- predict(final_model, newx = X_test_selected, s = min(final_model$lambda), type = "response")
 
 # Convert probabilities to class labels (0 or 1)
-train_predictions <- factor(ifelse(train_predictions_prob > 0.5, "Positive", "Negative"), levels = c("Negative", "Positive"))
-test_predictions <- factor(ifelse(test_predictions_prob > 0.5, "Positive", "Negative"), levels = c("Negative", "Positive"))
+train_predictions <- factor(ifelse(train_predictions_prob > 0.5, 1, 0), levels = c(0, 1))
+test_predictions <- factor(ifelse(test_predictions_prob > 0.5, 1, 0), levels = c(0, 1))
 
 
 # Calculate F1 scores for training and test datasets
-train_f1_score <- calculate_f1(corona_train$Sentiment, train_predictions)
-test_f1_score <- calculate_f1(corona_test$Sentiment, test_predictions)
+train_f1_score <- calculate_f1(bird_train$species, train_predictions)
+test_f1_score <- calculate_f1(bird_test$species, test_predictions)
 
 # Calculate the number of features
-num_features <- ncol(train_sparse_selected) 
+num_features <- ncol(X_train_selected) 
 
 coefficients <- coef(final_model, s = min(final_model$lambda))
 non_zero_features <- sum(coefficients != 0) - 1  # Subtract 1 for the intercept
@@ -408,26 +413,25 @@ cat("F1 score on test data:", test_f1_score, "\n")
 cat("Difference in F1 score between train and test data:", f1_difference, "\n")
 
 #LASSO REGRESSION
-
-best_lambda <- cache_parameter('covid_lasso_best_lambda')
+best_lambda <- cache_parameter('bird_lasso_best_lambda')
 if (is.null(best_lambda)) {
-  cv_lasso <- cv.glmnet(train_sparse, y_train, family = "binomial", alpha = 1, maxit = baseline_maxit, nfolds = validation_folds)
-  best_lambda <- cache_parameter('covid_lasso_best_lambda', cv_lasso$lambda.min)
+  cv_lasso <- cv.glmnet(X_train, y_train, family = "binomial", alpha = 1, maxit = baseline_maxit, nfolds = validation_folds)
+  best_lambda <- cache_parameter('bird_lasso_best_lambda', cv_lasso$lambda.min)
 }
 
 # Fit the final Lasso model using the best lambda
-final_model <- glmnet(train_sparse, y_train, family = "binomial", maxit = baseline_maxit, alpha = 1, lambda = best_lambda)
+final_model <- glmnet(X_train, y_train, family = "binomial", maxit = baseline_maxit, alpha = 1, lambda = best_lambda)
 
 # Predict on training and test datasets
-train_predictions_prob <- predict(final_model, newx = train_sparse, s = best_lambda, type = "response")
-test_predictions_prob <- predict(final_model, newx = test_sparse, s = best_lambda, type = "response")
+train_predictions_prob <- predict(final_model, newx = X_train, s = best_lambda, type = "response")
+test_predictions_prob <- predict(final_model, newx = X_test, s = best_lambda, type = "response")
 
 # Calculate F1 scores for training and test datasets
-train_f1_score <- calculate_f1(corona_train$Sentiment, train_predictions)
-test_f1_score <- calculate_f1(corona_test$Sentiment, test_predictions)
+train_f1_score <- calculate_f1(bird_train$species, train_predictions)
+test_f1_score <- calculate_f1(bird_test$species, test_predictions)
 
 # Calculate the number of features
-num_features <- ncol(train_sparse) 
+num_features <- ncol(X_train) 
 
 coefficients <- coef(final_model, s = best_lambda)
 non_zero_features <- sum(coefficients != 0) - 1  # Subtract 1 for the intercept
@@ -445,40 +449,42 @@ cat("Difference in F1 score between train and test data:", f1_difference, "\n")
 
 
 #CFS + RFE REGRESSION
+
 correlation_threshold = thresholds[5]
-best_features <- cache_parameter('covid_cfs_rfe_best_features')
+best_features <- cache_parameter('bird_cfs_rfe_best_features')
 if (is.null(best_features)) {
   cfs_selected_features <- select_features(correlation_threshold)
   
-  train_sparse_cfs_selected <- train_sparse[, cfs_selected_features, drop = FALSE]
+  X_train_cfs_selected <- X_train[, cfs_selected_features, drop = FALSE]
   
   # Perform recursive feature elimination
-  sizes <- generate_sizes(ncol(train_sparse_cfs_selected), 100, 20)
-  rfe_results <- custom_rfe(train_sparse_cfs_selected, y_train, sizes = sizes)
+  sizes <- generate_sizes(ncol(X_train_cfs_selected), 100, 20)
+  rfe_results <- custom_rfe(X_train_cfs_selected, y_train, sizes = sizes)
   
-  best_features <- cache_parameter('covid_cfs_rfe_best_features', rfe_results$best_features)
+  best_features <- cache_parameter('bird_cfs_rfe_best_features', rfe_results$best_features)
 }
 
+
 # Fit the final model using selected features
-train_sparse_selected = train_sparse[, best_features, drop=FALSE]
-test_sparse_selected = test_sparse[, best_features, drop=FALSE]
-final_model <- glmnet(train_sparse_selected, y_train, family = "binomial", alpha = baseline_alpha, maxit = baseline_maxit, lambda.min.ratio = baseline_lambda)
+X_train_selected = X_train[, best_features, drop=FALSE]
+X_test_selected = X_test[, best_features, drop=FALSE]
+final_model <- glmnet(X_train_selected, y_train, family = "binomial", alpha = baseline_alpha, maxit = baseline_maxit, lambda.min.ratio = baseline_lambda)
 
 # Predict on training and test datasets
-train_predictions_prob <- predict(final_model, newx = train_sparse_selected, s = min(final_model$lambda), type = "response")
-test_predictions_prob <- predict(final_model, newx = test_sparse_selected, s = min(final_model$lambda), type = "response")
+train_predictions_prob <- predict(final_model, newx = X_train_selected, s = min(final_model$lambda), type = "response")
+test_predictions_prob <- predict(final_model, newx = X_test_selected, s = min(final_model$lambda), type = "response")
 
 # Convert probabilities to class labels (0 or 1)
-train_predictions <- factor(ifelse(train_predictions_prob > 0.5, "Positive", "Negative"), levels = c("Negative", "Positive"))
-test_predictions <- factor(ifelse(test_predictions_prob > 0.5, "Positive", "Negative"), levels = c("Negative", "Positive"))
+train_predictions <- factor(ifelse(train_predictions_prob > 0.5, 1, 0), levels = c(0, 1))
+test_predictions <- factor(ifelse(test_predictions_prob > 0.5, 1, 0), levels = c(0, 1))
 
 
 # Calculate F1 scores for training and test datasets
-train_f1_score <- calculate_f1(corona_train$Sentiment, train_predictions)
-test_f1_score <- calculate_f1(corona_test$Sentiment, test_predictions)
+train_f1_score <- calculate_f1(bird_train$species, train_predictions)
+test_f1_score <- calculate_f1(bird_test$species, test_predictions)
 
 # Calculate the number of features
-num_features <- ncol(train_sparse_selected) 
+num_features <- ncol(X_train_selected) 
 
 coefficients <- coef(final_model, s = min(final_model$lambda))
 non_zero_features <- sum(coefficients != 0) - 1  # Subtract 1 for the intercept
@@ -493,8 +499,6 @@ cat("Number of non-zero features:", non_zero_features, "\n")
 cat("F1 score on training data:", train_f1_score, "\n")
 cat("F1 score on test data:", test_f1_score, "\n")
 cat("Difference in F1 score between train and test data:", f1_difference, "\n")
-
-
 
 # Stop the cluster to clean up resources
 stopCluster(cl)
