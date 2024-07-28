@@ -3,20 +3,15 @@ library(dplyr)
 library(quanteda)
 library(caret)
 library(glmnet)
-library(doParallel)
 library(jsonlite)
 
 # Global parameter to force overwriting of existing cache files
-FORCE_OVERWRITE <- TRUE
+FORCE_OVERWRITE <- FALSE
 
 baseline_lambda = 0
 baseline_maxit = 500000
 baseline_alpha = 0
 validation_folds = 10
-
-# numCores <- max(c(1, detectCores() - 2))
-# cl <- makeCluster(numCores)
-# registerDoParallel(cl)
 
 # Function to cache parameters
 cache_parameter <- function(name, value = NULL, path = "cache/", prefix = "param_") {
@@ -100,7 +95,7 @@ geometric_sizes <- function(start_size, end_size, num_steps) {
 # Calculate performance score function
 calculate_binary_performance <- function(actual, predicted) {
   confusion <- confusionMatrix(predicted, actual)
-  performance <- confusion$byClass["F1"]
+  performance <- confusion$overall['Accuracy']
   return(performance)
 }
 
@@ -275,11 +270,9 @@ subset_performance <- function(named_list) {
 set.seed(42)
 # Importing Train Data
 corona_train <- read.csv("./data/covid/Corona_NLP_train.csv")[, c("OriginalTweet", "Sentiment")]
-# corona_train <- sample_frac(corona_train, .1)
 
 # Importing Test Data
 corona_test <- read.csv("./data/covid/Corona_NLP_test.csv")[, c("OriginalTweet", "Sentiment")]
-# corona_test <- sample_frac(corona_test, .1)
 
 # Recode Sentiment to factors
 corona_train <- corona_train %>%
@@ -347,35 +340,33 @@ test_predictions_prob <- predict(baseline_model, test_sparse, s = min(baseline_m
 train_predictions <- factor(ifelse(train_predictions_prob > 0.5, levels[2], levels[1]), levels = levels)
 test_predictions <- factor(ifelse(test_predictions_prob > 0.5, levels[2], levels[1]), levels = levels)
 
-
-
-# Calculate F1 scores for training and test datasets
-train_f1_score <- calculate_binary_performance(corona_train$Sentiment, train_predictions)
-test_f1_score <- calculate_binary_performance(corona_test$Sentiment, test_predictions)
+# Calculate accuracy scores for training and test datasets
+train_accuracy_score <- calculate_binary_performance(corona_train$Sentiment, train_predictions)
+test_accuracy_score <- calculate_binary_performance(corona_test$Sentiment, test_predictions)
 
 # Calculate the number of features
 num_features <- ncol(train_sparse)
 non_zero_features <- length(nonzero_feature_indicies(baseline_model, min(baseline_model$lambda)))
 
-# Calculate the difference in F1 score between train and test data
-f1_difference <- train_f1_score - test_f1_score
+# Calculate the difference in accuracy score between train and test data
+accuracy_difference <- train_accuracy_score - test_accuracy_score
 
 # Print the results
 cat("BASELINE RESULTS\n")
 cat("Number of features:", num_features, "\n")
 cat("Number of non-zero features:", non_zero_features, "\n")
-cat("F1 score on training data:", train_f1_score, "\n")
-cat("F1 score on test data:", test_f1_score, "\n")
-cat("Difference in F1 score between train and test data:", f1_difference, "\n")
+cat("accuracy score on training data:", train_accuracy_score, "\n")
+cat("accuracy score on test data:", test_accuracy_score, "\n")
+cat("Difference in accuracy score between train and test data:", accuracy_difference, "\n")
 
 
 
 #CORRELATION FEATURE SELECTION
-feature_subsets <- cache_parameter('covid_cfs_feature_subsets')
-if (is.null(feature_subsets)) {
-  feature_subsets <- cache_parameter('covid_cfs_feature_subsets', CFS_binary_logistic(train_sparse, y_train, num_folds=validation_folds, num_bins = 20, min_vars = 50, geometric_spacing = TRUE))
+cfs_feature_subsets <- cache_parameter('covid_alt_cfs_feature_subsets')
+if (is.null(cfs_feature_subsets)) {
+  cfs_feature_subsets <- cache_parameter('covid_alt_cfs_feature_subsets', CFS_binary_logistic(train_sparse, y_train, num_folds=validation_folds, num_bins = 20, min_vars = 50, geometric_spacing = TRUE))
 }
-optimal_subset <- fromJSON(names(feature_subsets)[which.max(feature_subsets)])
+optimal_subset <- fromJSON(names(cfs_feature_subsets)[which.max(cfs_feature_subsets)])
 
 # Step 4: Use the optimal threshold to train the final model
 train_sparse_selected <- train_sparse[, optimal_subset]
@@ -391,26 +382,26 @@ test_predictions_prob <- predict(final_model, test_sparse_selected, s = min(fina
 train_predictions <- factor(ifelse(train_predictions_prob > 0.5, levels[2], levels[1]), levels = levels)
 test_predictions <- factor(ifelse(test_predictions_prob > 0.5, levels[2], levels[1]), levels = levels)
 
-# Calculate F1 scores for training and test datasets
-train_f1_score <- calculate_binary_performance(corona_train$Sentiment, train_predictions)
-test_f1_score <- calculate_binary_performance(corona_test$Sentiment, test_predictions)
+# Calculate accuracy scores for training and test datasets
+train_accuracy_score <- calculate_binary_performance(corona_train$Sentiment, train_predictions)
+test_accuracy_score <- calculate_binary_performance(corona_test$Sentiment, test_predictions)
 
 # Calculate the number of features
 num_features <- ncol(train_sparse_selected) 
 non_zero_features <- length(nonzero_feature_indicies(final_model, min(final_model$lambda)))
 
-# Calculate the difference in F1 score between train and test data
-f1_difference <- train_f1_score - test_f1_score
+# Calculate the difference in accuracy score between train and test data
+accuracy_difference <- train_accuracy_score - test_accuracy_score
 
 # Print the results
 cat("CFS RESULTS\n")
 cat("Number of features:", num_features, "\n")
 cat("Number of non-zero features:", non_zero_features, "\n")
-cat("F1 score on training data:", train_f1_score, "\n")
-cat("F1 score on test data:", test_f1_score, "\n")
-cat("Difference in F1 score between train and test data:", f1_difference, "\n")
+cat("accuracy score on training data:", train_accuracy_score, "\n")
+cat("accuracy score on test data:", test_accuracy_score, "\n")
+cat("Difference in accuracy score between train and test data:", accuracy_difference, "\n")
 
-plot_data <- subset_performance(feature_subsets)
+plot_data <- subset_performance(cfs_feature_subsets)
 ggplot(plot_data, aes(x = lengths, y = performance)) +
   geom_point() +
   geom_line() +
@@ -420,9 +411,9 @@ ggplot(plot_data, aes(x = lengths, y = performance)) +
 
 # RECURSIVE FEATURE ELIMINATION
 
-feature_subsets <- cache_parameter('covid_rfe_feature_subsets')
+feature_subsets <- cache_parameter('covid_alt_rfe_feature_subsets')
 if (is.null(feature_subsets)) {
-  feature_subsets <- cache_parameter('covid_rfe_feature_subsets', RFE_binary_logistic(train_sparse, y_train, num_folds=validation_folds, num_bins = 20, min_vars = 50, geometric_spacing = TRUE))
+  feature_subsets <- cache_parameter('covid_alt_rfe_feature_subsets', RFE_binary_logistic(train_sparse, y_train, num_folds=validation_folds, num_bins = 20, min_vars = 50, geometric_spacing = TRUE))
 }
 optimal_subset <- fromJSON(names(feature_subsets)[which.max(feature_subsets)])
 
@@ -439,24 +430,23 @@ test_predictions_prob <- predict(final_model, newx = test_sparse_selected, s = m
 train_predictions <- factor(ifelse(train_predictions_prob > 0.5, levels[2], levels[1]), levels = levels)
 test_predictions <- factor(ifelse(test_predictions_prob > 0.5, levels[2], levels[1]), levels = levels)
 
-
-# Calculate F1 scores for training and test datasets
-train_f1_score <- calculate_binary_performance(corona_train$Sentiment, train_predictions)
-test_f1_score <- calculate_binary_performance(corona_test$Sentiment, test_predictions)
+# Calculate accuracy scores for training and test datasets
+train_accuracy_score <- calculate_binary_performance(corona_train$Sentiment, train_predictions)
+test_accuracy_score <- calculate_binary_performance(corona_test$Sentiment, test_predictions)
 
 # Calculate the number of features
 num_features <- ncol(train_sparse_selected) 
 non_zero_features <- length(nonzero_feature_indicies(final_model, min(final_model$lambda)))
 
-# Calculate the difference in F1 score between train and test data
-f1_difference <- train_f1_score - test_f1_score
+# Calculate the difference in accuracy score between train and test data
+accuracy_difference <- train_accuracy_score - test_accuracy_score
 
 cat("RFE RESULTS\n")
 cat("Number of features:", num_features, "\n")
 cat("Number of non-zero features:", non_zero_features, "\n")
-cat("F1 score on training data:", train_f1_score, "\n")
-cat("F1 score on test data:", test_f1_score, "\n")
-cat("Difference in F1 score between train and test data:", f1_difference, "\n")
+cat("accuracy score on training data:", train_accuracy_score, "\n")
+cat("accuracy score on test data:", test_accuracy_score, "\n")
+cat("Difference in accuracy score between train and test data:", accuracy_difference, "\n")
 
 plot_data <- subset_performance(feature_subsets)
 ggplot(plot_data, aes(x = lengths, y = performance)) +
@@ -468,81 +458,73 @@ ggplot(plot_data, aes(x = lengths, y = performance)) +
 
 
 #LASSO REGRESSION
-lambdas <- cache_parameter('covid_lasso_lambdas')
-if (is.null(feature_subsets)) {
-  feature_subsets <- cache_parameter('covid_rfe_feature_subsets', RFE_binary_logistic(train_sparse, y_train, num_folds=validation_folds, num_bins = 20, min_vars = 50, geometric_spacing = TRUE))
-}
-optimal_subset <- fromJSON(names(feature_subsets)[which.max(feature_subsets)])
-
-
-best_lambda <- cache_parameter('covid_lasso_best_lambda')
-if (is.null(best_lambda)) {
+lambdas <- cache_parameter('covid_alt_lasso_lambdas')
+feature_subsets_sizes <- cache_parameter('covid_alt_lasso_feature_subsets_sizes')
+if (is.null(lambdas)) {
   cv_lasso <- cv.glmnet(train_sparse, y_train, family = "binomial", alpha = 1, maxit = baseline_maxit, nfolds = validation_folds)
-  best_lambda <- cache_parameter('covid_lasso_best_lambda', cv_lasso$lambda.min)
+  lambda_values <- cv_lasso$lambda
+  non_zero_features <- sapply(lambda_values, nonzero_feature_indicies, model = cv_lasso)
+  non_zero_feature_sizes <- sapply(non_zero_features, length)
+  performance <- cv_lasso$cvm
+  lambdas <- cache_parameter('covid_alt_lasso_lambdas', setNames(as.list(performance), as.character(lambda_values)))
+  feature_subsets_sizes <- cache_parameter('covid_alt_lasso_feature_subsets_sizes', setNames(as.list(performance), as.character(non_zero_feature_sizes)))
 }
+optimal_lambda <- as.double(names(lambdas)[which.min(lambdas)])
 
-
-cv_lasso <- cv.glmnet(train_sparse, y_train, family = "binomial", alpha = 1, maxit = baseline_maxit, nfolds = validation_folds)
-lambda_values <- cv_lasso$lambda
-
-
-non_zero_features <- sapply(lambda_values, num_nonzero_coefs, model = cv_lasso)
-performance <- cv_lasso$cvm
-
-data <- data.frame(non_zero_features = non_zero_features, performance = performance)
-
-ggplot(data, aes(x = non_zero_features, y = performance)) +
-  geom_point() +
-  geom_line() +
-  labs(title = "Number of Non-Zero Features vs Cross-Validation Performance",
-       x = "Number of Non-Zero Features",
-       y = "Mean Cross-Validated Error")
 
 # Fit the final Lasso model using the best lambda
-final_model <- glmnet(train_sparse, y_train, family = "binomial", maxit = baseline_maxit, alpha = 1, lambda = best_lambda)
+final_model <- glmnet(train_sparse, y_train, family = "binomial", maxit = baseline_maxit, alpha = 1, lambda.min.ratio = optimal_lambda)
 
 # Predict on training and test datasets
-train_predictions_prob <- predict(final_model, newx = train_sparse, s = best_lambda, type = "response")
-test_predictions_prob <- predict(final_model, newx = test_sparse, s = best_lambda, type = "response")
+train_predictions_prob <- predict(final_model, newx = train_sparse, s = optimal_lambda, type = "response")
+test_predictions_prob <- predict(final_model, newx = test_sparse, s = optimal_lambda, type = "response")
 
-# Calculate F1 scores for training and test datasets
-train_f1_score <- calculate_binary_performance(corona_train$Sentiment, train_predictions)
-test_f1_score <- calculate_binary_performance(corona_test$Sentiment, test_predictions)
+# Convert probabilities to class labels (0 or 1)
+train_predictions <- factor(ifelse(train_predictions_prob > 0.5, levels[2], levels[1]), levels = levels)
+test_predictions <- factor(ifelse(test_predictions_prob > 0.5, levels[2], levels[1]), levels = levels)
+
+# Calculate accuracy scores for training and test datasets
+train_accuracy_score <- calculate_binary_performance(corona_train$Sentiment, train_predictions)
+test_accuracy_score <- calculate_binary_performance(corona_test$Sentiment, test_predictions)
 
 # Calculate the number of features
 num_features <- ncol(train_sparse) 
-non_zero_features <- num_nonzero_coefs(final_model, min(final_model$lambda))
+non_zero_features <- length(nonzero_feature_indicies(final_model, min(final_model$lambda)))
 
-# Calculate the difference in F1 score between train and test data
-f1_difference <- train_f1_score - test_f1_score
+# Calculate the difference in accuracy score between train and test data
+accuracy_difference <- train_accuracy_score - test_accuracy_score
 
 cat("LASSO RESULTS\n")
-cat("Best lambda from cross-validation: ", best_lambda, "\n")
+cat("Best lambda from cross-validation: ", optimal_lambda, "\n")
 cat("Number of features:", num_features, "\n")
 cat("Number of non-zero features:", non_zero_features, "\n")
-cat("F1 score on training data:", train_f1_score, "\n")
-cat("F1 score on test data:", test_f1_score, "\n")
-cat("Difference in F1 score between train and test data:", f1_difference, "\n")
+cat("accuracy score on training data:", train_accuracy_score, "\n")
+cat("accuracy score on test data:", test_accuracy_score, "\n")
+cat("Difference in accuracy score between train and test data:", accuracy_difference, "\n")
 
+
+plot_data <- data.frame(lengths = as.integer(names(feature_subsets_sizes)), performance = as.numeric(feature_subsets_sizes))
+
+ggplot(plot_data, aes(x = lengths, y = performance)) +
+  geom_point() +
+  geom_line() +
+  labs(title = "Performance vs Number of Features",
+       x = "Number of Features",
+       y = "Performance Score")
 
 #CFS + RFE REGRESSION
-correlation_threshold = thresholds[5]
-best_features <- cache_parameter('covid_cfs_rfe_best_features')
-if (is.null(best_features)) {
-  cfs_selected_features <- select_features(correlation_threshold)
-  
-  train_sparse_cfs_selected <- train_sparse[, cfs_selected_features, drop = FALSE]
-  
-  # Perform recursive feature elimination
-  sizes <- generate_sizes(ncol(train_sparse_cfs_selected), 100, 20)
-  rfe_results <- custom_rfe(train_sparse_cfs_selected, y_train, sizes = sizes)
-  
-  best_features <- cache_parameter('covid_cfs_rfe_best_features', rfe_results$best_features)
+
+starting_features = fromJSON(names(cfs_feature_subsets)[3])
+feature_subsets <- cache_parameter('covid_alt_cfs_rfe_feature_subsets')
+if (is.null(feature_subsets)) {
+  train_sparse_cfs_selected <- train_sparse[, starting_features, drop = FALSE]
+  feature_subsets <- cache_parameter('covid_alt_cfs_rfe_feature_subsets', RFE_binary_logistic(train_sparse_cfs_selected, y_train, num_folds=validation_folds, num_bins = 20, min_vars = 50, geometric_spacing = FALSE))
 }
+optimal_subset <- fromJSON(names(feature_subsets)[which.max(feature_subsets)])
 
 # Fit the final model using selected features
-train_sparse_selected = train_sparse[, best_features, drop=FALSE]
-test_sparse_selected = test_sparse[, best_features, drop=FALSE]
+train_sparse_selected = train_sparse[, optimal_subset, drop=FALSE]
+test_sparse_selected = test_sparse[, optimal_subset, drop=FALSE]
 final_model <- glmnet(train_sparse_selected, y_train, family = "binomial", alpha = baseline_alpha, maxit = baseline_maxit, lambda.min.ratio = baseline_lambda)
 
 # Predict on training and test datasets
@@ -553,32 +535,28 @@ test_predictions_prob <- predict(final_model, newx = test_sparse_selected, s = m
 train_predictions <- factor(ifelse(train_predictions_prob > 0.5, levels[2], levels[1]), levels = levels)
 test_predictions <- factor(ifelse(test_predictions_prob > 0.5, levels[2], levels[1]), levels = levels)
 
-
-# Calculate F1 scores for training and test datasets
-train_f1_score <- calculate_binary_performance(corona_train$Sentiment, train_predictions)
-test_f1_score <- calculate_binary_performance(corona_test$Sentiment, test_predictions)
+# Calculate accuracy scores for training and test datasets
+train_accuracy_score <- calculate_binary_performance(corona_train$Sentiment, train_predictions)
+test_accuracy_score <- calculate_binary_performance(corona_test$Sentiment, test_predictions)
 
 # Calculate the number of features
 num_features <- ncol(train_sparse_selected) 
+non_zero_features <- length(nonzero_feature_indicies(final_model, min(final_model$lambda)))
 
-coefficients <- coef(final_model, s = min(final_model$lambda))
-non_zero_features <- sum(coefficients != 0) - 1  # Subtract 1 for the intercept
-
-# Calculate the difference in F1 score between train and test data
-f1_difference <- train_f1_score - test_f1_score
+# Calculate the difference in accuracy score between train and test data
+accuracy_difference <- train_accuracy_score - test_accuracy_score
 
 cat("CFS + RFE RESULTS\n")
-cat("Correlation Threshold:", correlation_threshold, "\n")
 cat("Number of features:", num_features, "\n")
 cat("Number of non-zero features:", non_zero_features, "\n")
-cat("F1 score on training data:", train_f1_score, "\n")
-cat("F1 score on test data:", test_f1_score, "\n")
-cat("Difference in F1 score between train and test data:", f1_difference, "\n")
+cat("accuracy score on training data:", train_accuracy_score, "\n")
+cat("accuracy score on test data:", test_accuracy_score, "\n")
+cat("Difference in accuracy score between train and test data:", accuracy_difference, "\n")
 
-
-
-# # Stop the cluster to clean up resources
-# stopCluster(cl)
-# 
-# # Unregister the parallel backend (optional, to ensure no residual registration)
-# registerDoSEQ()
+plot_data <- subset_performance(feature_subsets)
+ggplot(plot_data, aes(x = lengths, y = performance)) +
+  geom_point() +
+  geom_line() +
+  labs(title = "Performance vs Number of Features",
+       x = "Number of Features",
+       y = "Performance Score")

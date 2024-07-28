@@ -2,11 +2,8 @@
 title: "Feature Selection: An Exploration of Algorithm Performance"
 author: "Jason Case, Abhishek Dugar, Daniel Nkuah, Khoa Tran"
 date: '`r Sys.Date()`'
-format:
-  html:
-    code-fold: true
+format: revealjs
 course: STA 6257 - Advanced Statistical Modeling
-bibliography: references.bib # file contains bibtex for references
 #always_allow_html: true # this allows to get PDF with HTML features
 self-contained: true
 execute: 
@@ -16,11 +13,10 @@ editor:
   markdown: 
     wrap: 72
 ---
-# Introduction
+## Introduction
 The discipline of feature selection in machine learning has evolved significantly over the past few decades, transforming from a practice once stigmatized as "data dredging" to an essential component of modern predictive modeling. Early methods for variable selection were initially met with skepticism by the statistical community, which viewed them as potentially spurious means of uncovering patterns in data. These reservations stemmed from concerns about overfitting and the robustness of statistical inferences drawn from such techniques.
- 
-**Early Methods**
 
+## Introduction: Early Methods
 Feature selection's early forays began with relatively simple approaches like forward, backward, and stepwise variable selection in linear models. Forward selection starts with no variables in the model, adding them one by one based on specific criteria until no significant improvement is observed. Conversely, backward selection begins with all candidate variables, removing the least significant ones iteratively. Stepwise selection combines both approaches, iteratively adding and removing variables to optimize model performance.
  
 These methods were foundational but had limitations, particularly when applied to datasets with high dimensionality. For instance, @foster2004variable in their study on predicting bankruptcy highlighted the complexity of variable selection when dealing with large sets of predictors. They utilized a 20:80 train/validation split to ensure robust model evaluation and critiqued traditional criteria like the Akaike Information Criterion (AIC) for being too liberal, risking overfitting. Instead, they advocated for methods like the Bonferroni correction, which, though conservative, provided more reliable results by dynamically adjusting p-values and avoiding inflated values from high leverage points.
@@ -44,7 +40,7 @@ In the context of gene selection for cancer classification, @guyon2002gene demon
 *This table presents the performance of the top classifiers on test data consisting of 34 samples. The table includes combinations of SVM or Baseline genes with SVM or Baseline classifiers. For each combination, the table shows the number of selected genes, the number of errors at zero rejection, and the number of rejections at zero error. The number of genes represents the subset selected by the method that provides the best classification performance. Patient ID numbers corresponding to classification errors are indicated in brackets. Additionally, results without any gene selection are provided for comparison.*
 :::
  
-**Modern Methods**
+## Introduction: Modern Methods
 
 Modern feature selection methods have become essential for data preprocessing, extracting the most important information from big data. By reducing the number of features, these methods mitigate the risk of overfitting and enhance the performance of machine learning models and pattern recognition systems [@venkatesh2019review].
  
@@ -65,10 +61,10 @@ In more recent developments, multiple criteria decision-making (MCDM) methods ha
 The trajectory of feature selection in machine learning illustrates a progression from simple, univariate methods to sophisticated, model-based approaches that address complex issues like multicollinearity and multi-criteria decision making. Early skepticism about "data dredging" has given way to an appreciation of the nuanced techniques necessary for robust predictive modeling. Feature selection methods have evolved to include similarity-based, information-theoretical-based, sparse-learning-based, statistical-based, filter, wrapper, embedded, hybrid, supervised, semi-supervised, and unsupervised approaches. Modern methods, such as neural networks, further enhance the accuracy and efficiency of feature selection, ensuring that only the most relevant features are utilized. As the field continues to advance, it is clear that feature selection will remain a cornerstone of machine learning, improving model performance and reducing computational complexity across a wide range of applications.
 
 
-# Methods
+## Methods
 Our exploration of feature selection will begin by comparing the performance of various feature selection methods on a variety of real-world datasets. We will look at four different aspects of performance: overall model performance on the holdout set, variance in performance between the training and holdout set, and parsimony of the final model. We explored an algorithm from each category of feature selection methods.
 
-**Correlation - Based Feature Selection (CFS)**
+## Methods: Correlation - Based Feature Selection (CFS)
 
 A common filtering method uses the correlation coefficient to measure the relationship between each variable and the target, independently.
 
@@ -78,8 +74,7 @@ $\text{Ms} = \frac{k\bar{\text{rcf}}}{\sqrt k + k(k - 1)\bar{\text{rff}}}$
 
 where Ms is the heuristic ”merit” of a feature subset S containing k features, $\bar{\text{rcf}}$ is the mean feature-class correlation and $\bar{\text{rff}}$ is the average feature - feature intercorrelation. The numerator of this equation reflects the extent to which a set of features is indicative of the class, while the denominator measures the level of redundancy among the features [@hall1999correlation].
  
-
-**Recursive Feature Elimination (RFE)**
+## Methods: Recursive Feature Elimination (RFE)
 
 RFE is a common wrapper method that removes variables iteratively.
 
@@ -105,7 +100,7 @@ $D(L^{-m}) = -\frac{1}{2} \sum \sum \alpha_i \alpha_j (K(x_i, x_j) - (K(x_i^{-m}
 
 Where $x_i^{-m}$ , $x_j^{-m}$ are the vectors in which $m$-th feature has been removed.
 
-**Least Absolute Shrinkage and Selection Operator (LASSO)**
+## Methods: Least Absolute Shrinkage and Selection Operator (LASSO)
 
 LASSO is an embedded method that uses L1 Regularization to shrink coefficients to zero, effectively performing feature selection during parameter estimation. LASSO minimizes the sum of squared errors while imposing an upper limit on the sum of the absolute values of the model parameters.
 
@@ -115,11 +110,11 @@ minimize  $\frac{\| Y - X\beta \|_2^2}{n}$ subject to $X \sum_{j=1}^{k} \|\beta_
 
 where $t$ is the upper bound for the sum of the coefficients [@buhlmann2011statistics]
 
-**CFS & RFE**
+## Methods: CFS & RFE
 
 For the hybrid method, we will combine the filter and wrapper methods; first filtering using the correlation coefficient and then removing variables iteratively using RFE.
 
-# Analysis and Results
+## Analysis
 
 ```{r}
 # #| include: false
@@ -439,11 +434,9 @@ download_kaggle_dataset <- function(dataset, path) {
 
 ```
 
-## Data and Visualization
-
 We evaluated the performance of the methods on two classification tasks. The datasets and associated tasks used were:
 
-**Spambase Dataset**
+## Analysis: Spambase Dataset
 
 The Spambase dataset from the UCI Machine Learning Repository contains 4601 instances of emails, with 57 features for classification tasks to determine whether an email is spam (1) or not (0). Features include word and character frequency counts, as well as measures of consecutive capital letters. It is commonly used for building and testing spam detection models [@misc_spambase_94]. This dataset was selected because it contains a dense set of numeric predictor variables.
 
@@ -483,7 +476,7 @@ cat("Number of columns in the training dataset:", num_columns, "\n")
 cat("Average percent of values that are 0 in the training dataset:", sparsity, "%\n")
 ```
 
-**COVID-19 NLP Text Classification Dataset**
+## Analysis: COVID-19 NLP Text Classification Dataset
 
 The COVID-19 NLP Text Classification dataset on Kaggle consists of tweets related to COVID-19, labeled for sentiment analysis. It includes features like tweet content, sentiment labels (positive, negative, neutral), and additional metadata. This dataset is designed for natural language processing tasks to analyze public sentiment during the pandemic [@datatattle2024covid]. An NLP task was chosen because the vector of feature space is sparse and of high dimension.
 
@@ -581,8 +574,7 @@ To establish a baseline for performance, we first trained a multinomial logistic
 
 We used 10-fold cross validation accuracy to select the variables in all methods requiring a validation dataset (RFE, LASSO).
 
-
-**Spambase Dataset**
+## Results: Spambase Dataset
 
 Data scientists often include interaction terms in a model to capture the combined effect of two or more variables on the target variable. Interaction terms help to identify if the effect of one predictor on the outcome changes at different levels of another predictor, providing a more nuanced and accurate representation of the relationships within the data. This can lead to improved model performance and better insights into complex dependencies between variables. However, including interaction terms in a model significantly increases the number of features, as it involves creating new variables that represent the interactions between the original variables. To explore this effect, we added all possible pairwise interaction terms for the 52 variables in the Spambase data, resulting in $\( \frac{52 \times 51}{2} = 1,326 \)$ additional features. We centered and scaled the original features prior to adding the terms. We use a binary logistic regression to predict if an email is spam (1) or not spam (0).
 
@@ -831,7 +823,7 @@ kable(data, format = "html", col.names = c("Method", "Number of Features", "Test
 
 ```
 
-**COVID-19 NLP Text Classification Dataset**
+## Results: COVID-19 NLP Text Classification Dataset*
 
 In a bag-of-words NLP classification task, text data is converted into a matrix of word frequencies or occurrences, where each row represents a document and each column represents a unique word from the entire corpus. The classification model then uses this matrix to predict the category of each document. One of the primary challenges in this approach is data sparsity, as most documents contain only a small subset of all possible words, resulting in a sparse matrix with many zero entries. Additionally, the size of the feature space can become extremely large, especially with extensive vocabularies, which can lead to increased computational demands, memory consumption, and the risk of overfitting, necessitating feature selection or dimensionality reduction techniques. 
 
@@ -1071,8 +1063,6 @@ kable(data, format = "html", col.names = c("Method", "Number of Features", "Test
 ```
 
 
-# Conclusion
-
-# References
+## Conclusion
 
 

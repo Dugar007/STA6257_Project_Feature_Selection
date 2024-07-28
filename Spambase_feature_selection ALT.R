@@ -284,7 +284,7 @@ download_and_extract_zip <- function(url, dest_dir) {
 
 # download_and_extract_zip("https://archive.ics.uci.edu/static/public/94/spambase.zip", "./data/spambase")
 
-#Importing Spam Data
+#Importing spam_alt Data
 last_57_lines <- tail(readLines("./data/spambase/spambase.names"), 57)
 # Function to extract and sanitize column names
 extract_column_names <- function(line) {
@@ -301,21 +301,22 @@ raw_column_names <- c(sapply(last_57_lines, extract_column_names), 'flag_spam')
 
 # Ensure unique column names
 unique_column_names <- make.unique(raw_column_names)
-spam_data <- read.csv("./data/spambase/spambase.data", header = FALSE, col.names = unique_column_names) %>%
-  mutate(flag_spam = factor(flag_spam, levels = c(0, 1)))
+spam_alt_data <- read.csv("./data/spambase/spambase.data", header = FALSE, col.names = unique_column_names) %>%
+            mutate(flag_spam = factor(flag_spam, levels = c(0, 1)))
+spam_alt_data <- sample_frac(spam_alt_data, .1)
 
 # Create a train-test split
-trainIndex <- sample(1:nrow(spam_data), size = 0.8 * nrow(spam_data))
+trainIndex <- sample(1:nrow(spam_alt_data), size = 0.8 * nrow(spam_alt_data))
 
 # Split the data
-spam_train <- spam_data[trainIndex, ]
-spam_test <- spam_data[-trainIndex, ]
+spam_alt_train <- spam_alt_data[trainIndex, ]
+spam_alt_test <- spam_alt_data[-trainIndex, ]
 
-X_train_raw <- spam_train %>% select(-flag_spam)
-X_test_raw  <- spam_test %>% select(-flag_spam)
+X_train_raw <- spam_alt_train %>% select(-flag_spam)
+X_test_raw  <- spam_alt_test %>% select(-flag_spam)
 
-y_train  <- spam_train$flag_spam
-y_test <- spam_test$flag_spam
+y_train  <- spam_alt_train$flag_spam
+y_test <- spam_alt_test$flag_spam
 
 levels = levels(y_train)
 
@@ -344,8 +345,8 @@ train_predictions <- factor(ifelse(train_predictions_prob > 0.5, levels[2], leve
 test_predictions <- factor(ifelse(test_predictions_prob > 0.5, levels[2], levels[1]), levels = levels)
 
 # Calculate accuracy scores for training and test datasets
-train_accuracy_score <- calculate_binary_performance(spam_train$flag_spam, train_predictions)
-test_accuracy_score <- calculate_binary_performance(spam_test$flag_spam, test_predictions)
+train_accuracy_score <- calculate_binary_performance(spam_alt_train$flag_spam, train_predictions)
+test_accuracy_score <- calculate_binary_performance(spam_alt_test$flag_spam, test_predictions)
 
 # Calculate the number of features
 num_features <- ncol(X_train)
@@ -365,9 +366,9 @@ cat("Difference in accuracy score between train and test data:", accuracy_differ
 
 
 #CORRELATION FEATURE SELECTION
-cfs_feature_subsets <- cache_parameter('spam_cfs_feature_subsets')
+cfs_feature_subsets <- cache_parameter('spam_alt_cfs_feature_subsets')
 if (is.null(cfs_feature_subsets)) {
-  cfs_feature_subsets <- cache_parameter('spam_cfs_feature_subsets', CFS_binary_logistic(X_train, y_train, num_folds=validation_folds, num_bins = 20, min_vars = 50, geometric_spacing = TRUE))
+  cfs_feature_subsets <- cache_parameter('spam_alt_cfs_feature_subsets', CFS_binary_logistic(X_train, y_train, num_folds=validation_folds, num_bins = 20, min_vars = 50, geometric_spacing = TRUE))
 }
 optimal_subset <- fromJSON(names(cfs_feature_subsets)[which.max(cfs_feature_subsets)])
 
@@ -386,8 +387,8 @@ train_predictions <- factor(ifelse(train_predictions_prob > 0.5, levels[2], leve
 test_predictions <- factor(ifelse(test_predictions_prob > 0.5, levels[2], levels[1]), levels = levels)
 
 # Calculate accuracy scores for training and test datasets
-train_accuracy_score <- calculate_binary_performance(spam_train$flag_spam, train_predictions)
-test_accuracy_score <- calculate_binary_performance(spam_test$flag_spam, test_predictions)
+train_accuracy_score <- calculate_binary_performance(spam_alt_train$flag_spam, train_predictions)
+test_accuracy_score <- calculate_binary_performance(spam_alt_test$flag_spam, test_predictions)
 
 # Calculate the number of features
 num_features <- ncol(X_train_selected) 
@@ -414,9 +415,9 @@ ggplot(plot_data, aes(x = lengths, y = performance)) +
 
 # RECURSIVE FEATURE ELIMINATION
 
-feature_subsets <- cache_parameter('spam_rfe_feature_subsets')
+feature_subsets <- cache_parameter('spam_alt_rfe_feature_subsets')
 if (is.null(feature_subsets)) {
-  feature_subsets <- cache_parameter('spam_rfe_feature_subsets', RFE_binary_logistic(X_train, y_train, num_folds=validation_folds, num_bins = 20, min_vars = 50, geometric_spacing = TRUE))
+  feature_subsets <- cache_parameter('spam_alt_rfe_feature_subsets', RFE_binary_logistic(X_train, y_train, num_folds=validation_folds, num_bins = 20, min_vars = 50, geometric_spacing = TRUE))
 }
 optimal_subset <- fromJSON(names(feature_subsets)[which.max(feature_subsets)])
 
@@ -434,8 +435,8 @@ train_predictions <- factor(ifelse(train_predictions_prob > 0.5, levels[2], leve
 test_predictions <- factor(ifelse(test_predictions_prob > 0.5, levels[2], levels[1]), levels = levels)
 
 # Calculate accuracy scores for training and test datasets
-train_accuracy_score <- calculate_binary_performance(spam_train$flag_spam, train_predictions)
-test_accuracy_score <- calculate_binary_performance(spam_test$flag_spam, test_predictions)
+train_accuracy_score <- calculate_binary_performance(spam_alt_train$flag_spam, train_predictions)
+test_accuracy_score <- calculate_binary_performance(spam_alt_test$flag_spam, test_predictions)
 
 # Calculate the number of features
 num_features <- ncol(X_train_selected) 
@@ -461,16 +462,16 @@ ggplot(plot_data, aes(x = lengths, y = performance)) +
 
 
 #LASSO REGRESSION
-lambdas <- cache_parameter('spam_lasso_lambdas')
-feature_subsets_sizes <- cache_parameter('spam_lasso_feature_subsets_sizes')
+lambdas <- cache_parameter('spam_alt_lasso_lambdas')
+feature_subsets_sizes <- cache_parameter('spam_alt_lasso_feature_subsets_sizes')
 if (is.null(lambdas)) {
   cv_lasso <- cv.glmnet(X_train, y_train, family = "binomial", alpha = 1, maxit = baseline_maxit, nfolds = validation_folds)
   lambda_values <- cv_lasso$lambda
   non_zero_features <- sapply(lambda_values, nonzero_feature_indicies, model = cv_lasso)
   non_zero_feature_sizes <- sapply(non_zero_features, length)
   performance <- cv_lasso$cvm
-  lambdas <- cache_parameter('spam_lasso_lambdas', setNames(as.list(performance), as.character(lambda_values)))
-  feature_subsets_sizes <- cache_parameter('spam_lasso_feature_subsets_sizes', setNames(as.list(performance), as.character(non_zero_feature_sizes)))
+  lambdas <- cache_parameter('spam_alt_lasso_lambdas', setNames(as.list(performance), as.character(lambda_values)))
+  feature_subsets_sizes <- cache_parameter('spam_alt_lasso_feature_subsets_sizes', setNames(as.list(performance), as.character(non_zero_feature_sizes)))
 }
 optimal_lambda <- as.double(names(lambdas)[which.min(lambdas)])
 
@@ -487,8 +488,8 @@ train_predictions <- factor(ifelse(train_predictions_prob > 0.5, levels[2], leve
 test_predictions <- factor(ifelse(test_predictions_prob > 0.5, levels[2], levels[1]), levels = levels)
 
 # Calculate accuracy scores for training and test datasets
-train_accuracy_score <- calculate_binary_performance(spam_train$flag_spam, train_predictions)
-test_accuracy_score <- calculate_binary_performance(spam_test$flag_spam, test_predictions)
+train_accuracy_score <- calculate_binary_performance(spam_alt_train$flag_spam, train_predictions)
+test_accuracy_score <- calculate_binary_performance(spam_alt_test$flag_spam, test_predictions)
 
 # Calculate the number of features
 num_features <- ncol(X_train) 
@@ -519,10 +520,10 @@ ggplot(plot_data, aes(x = lengths, y = performance)) +
 #CFS + RFE REGRESSION
 
 starting_features = fromJSON(names(cfs_feature_subsets)[3])
-feature_subsets <- cache_parameter('spam_cfs_rfe_feature_subsets')
+feature_subsets <- cache_parameter('spam_alt_cfs_rfe_feature_subsets')
 if (is.null(feature_subsets)) {
   X_train_cfs_selected <- X_train[, starting_features, drop = FALSE]
-  feature_subsets <- cache_parameter('spam_cfs_rfe_feature_subsets', RFE_binary_logistic(X_train_cfs_selected, y_train, num_folds=validation_folds, num_bins = 20, min_vars = 50, geometric_spacing = FALSE))
+  feature_subsets <- cache_parameter('spam_alt_cfs_rfe_feature_subsets', RFE_binary_logistic(X_train_cfs_selected, y_train, num_folds=validation_folds, num_bins = 20, min_vars = 50, geometric_spacing = FALSE))
 }
 optimal_subset <- fromJSON(names(feature_subsets)[which.max(feature_subsets)])
 
@@ -540,8 +541,8 @@ train_predictions <- factor(ifelse(train_predictions_prob > 0.5, levels[2], leve
 test_predictions <- factor(ifelse(test_predictions_prob > 0.5, levels[2], levels[1]), levels = levels)
 
 # Calculate accuracy scores for training and test datasets
-train_accuracy_score <- calculate_binary_performance(spam_train$flag_spam, train_predictions)
-test_accuracy_score <- calculate_binary_performance(spam_test$flag_spam, test_predictions)
+train_accuracy_score <- calculate_binary_performance(spam_alt_train$flag_spam, train_predictions)
+test_accuracy_score <- calculate_binary_performance(spam_alt_test$flag_spam, test_predictions)
 
 # Calculate the number of features
 num_features <- ncol(X_train_selected) 
