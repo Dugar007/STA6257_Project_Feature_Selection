@@ -1,7 +1,7 @@
 ---
 title: "Feature Selection: An Exploration of Algorithm Performance"
 author: "Jason Case, Abhishek Dugar, Daniel Nkuah, Khoa Tran"
-date: '`r Sys.Date()`'
+date: '2024-07-30'
 format: revealjs
 course: STA 6257 - Advanced Statistical Modeling
 #always_allow_html: true # this allows to get PDF with HTML features
@@ -13,109 +13,6 @@ editor:
   markdown: 
     wrap: 72
 ---
-## Introduction
-The discipline of feature selection in machine learning has evolved significantly over the past few decades, transforming from a practice once stigmatized as "data dredging" to an essential component of modern predictive modeling. Early methods for variable selection were initially met with skepticism by the statistical community, which viewed them as potentially spurious means of uncovering patterns in data. These reservations stemmed from concerns about overfitting and the robustness of statistical inferences drawn from such techniques.
-
-## Introduction: Early Methods
-Feature selection's early forays began with relatively simple approaches like forward, backward, and stepwise variable selection in linear models. Forward selection starts with no variables in the model, adding them one by one based on specific criteria until no significant improvement is observed. Conversely, backward selection begins with all candidate variables, removing the least significant ones iteratively. Stepwise selection combines both approaches, iteratively adding and removing variables to optimize model performance.
- 
-These methods were foundational but had limitations, particularly when applied to datasets with high dimensionality. For instance, @foster2004variable in their study on predicting bankruptcy highlighted the complexity of variable selection when dealing with large sets of predictors. They utilized a 20:80 train/validation split to ensure robust model evaluation and critiqued traditional criteria like the Akaike Information Criterion (AIC) for being too liberal, risking overfitting. Instead, they advocated for methods like the Bonferroni correction, which, though conservative, provided more reliable results by dynamically adjusting p-values and avoiding inflated values from high leverage points.
- 
-Univariate screening procedures marked another step in the evolution of feature selection. These methods involve assessing each predictor variable independently for its relationship with the target variable, selecting those that meet a certain statistical threshold. While straightforward and computationally inexpensive, univariate methods often fail to capture the complex interdependencies between variables. 
- 
-In the context of gene selection for cancer classification, @guyon2002gene demonstrated the limitations of univariate methods. Prior to their work, gene selection relied heavily on simple statistical measures such as correlations, which often resulted in large, redundant sets of genes. The advent of Recursive Feature Elimination (RFE) represented a significant improvement. RFE uses Support Vector Machines (SVMs) to iteratively eliminate the least important features, refining the feature set to a more relevant subset and thus enhancing model performance. There were multiple tests that demonstrated that SVMs outperforms the baseline methods. First, the best leave-one-out performance results in a 100% accuracy for SVMs and only 90% for the baseline method (combination of univariate classifiers). The second example was using the statistical test, (1-n), where n equals the number of features, we can state with 99.3% confidence that SVMs are better than the baseline method. Additionally, when comparing the SVM-selected genes and baseline-selected genes, the SVM genes are better with a 84.1% confidence based on test error rate and a 99.2% confidence based on the test rejection rate. Figure 1 shows the performance comparison between SVMs and the baseline method, success rate, acceptance rate, extremal margin, and median margin and also indicates that there is a significant difference between the gene selection. Table 1 summarizes the results of the comparison between SVM and the baseline method, and it also indicates that SVMs are significantly better based on the est error rate and that it achieves a higher accuracy in classifying the samples. This method highlighted the critical role of robust feature selection in bioinformatics, where the choice of features often influenced classification outcomes more than the specific classifier used.
-
-**Figure 1. Reproduction of Figure 2 in @guyon2002gene.**
-
-::: {#figure-1 .figure}
-![Figure 1](Figure_1.jpeg){ width=100% }
-*This figure shows a performance comparison between SVMs and the baseline method using Leukemia data. Classifiers were trained on gene subsets selected by SVMs and the baseline method using the training set of the Leukemia data. The number of genes is color-coded and indicated in the legend. Quality indicators are displayed radially: channels 1–4 show cross-validation results using the leave-one-out method; channels 5–8 show test set results. The indicators include success rate (suc), acceptance rate (acc), extremal margin (ext), and median margin (med). Coefficients are rescaled to have zero mean and variance 1 across all plots. For each classifier, a larger colored area indicates better performance. The figure reveals no significant difference in classifier performance on this dataset, but a significant difference in gene selections.*
-:::
-
-
-**Table 1. Reproduction of Table 6 in @guyon2002gene.**
-
-::: {#table-1 .figure}
-![Table 1](Table_1.jpeg){ width=100% }
-*This table presents the performance of the top classifiers on test data consisting of 34 samples. The table includes combinations of SVM or Baseline genes with SVM or Baseline classifiers. For each combination, the table shows the number of selected genes, the number of errors at zero rejection, and the number of rejections at zero error. The number of genes represents the subset selected by the method that provides the best classification performance. Patient ID numbers corresponding to classification errors are indicated in brackets. Additionally, results without any gene selection are provided for comparison.*
-:::
- 
-## Introduction: Modern Methods
-
-Modern feature selection methods have become essential for data preprocessing, extracting the most important information from big data. By reducing the number of features, these methods mitigate the risk of overfitting and enhance the performance of machine learning models and pattern recognition systems [@venkatesh2019review].
- 
-Advanced feature selection methods include similarity-based, information-theoretical-based, sparse-learning-based, and statistical-based approaches. Similarity-based approaches select features based on their similarity or dissimilarity, while information-theoretical-based approaches use concepts like entropy and mutual information to evaluate feature importance. Sparse-learning-based approaches focus on identifying a small, essential set of features by limiting the number of features selected, and statistical-based approaches utilize statistical tests and models to determine the significance of features for predicting the target variable [@li2017feature].
- 
-Early and modern approaches are now categorized into filter, wrapper, embedded, and hybrid approaches. The filter model selects features based on the general properties of the training data, independent of any learning algorithm, making it computationally efficient for large datasets [@das2001filters; @kohavi1997wrappers]. Within the filter model, feature selection algorithms can be further divided into feature weighting algorithms, which assign weights to each feature based on their relevance, and subset search algorithms, which explore candidate feature subsets based on specific evaluation measures [@kohavi1997wrappers; @liu2012feature]. The wrapper model, on the other hand, uses a specific learning algorithm to evaluate and determine which features to keep, often leading to better performance but at a higher computational cost [@langley1994selection]. Embedded methods perform feature selection during the model training process, integrating selection directly with learning. Hybrid methods combine the best aspects of filter and wrapper methods to achieve optimal performance with manageable computational complexity [@venkatesh2019review; @jovic2015review].
- 
-Feature selection can also be divided into supervised, semi-supervised, and unsupervised categories. Supervised learning involves labeled data, semi-supervised learning utilizes both labeled and unlabeled data, and unsupervised learning works with unlabeled data. @miao2016survey emphasized that the effectiveness of feature selection methods varies depending on the dataset and model used, necessitating tailored approaches to feature selection.
- 
-As feature selection methods evolved, addressing multicollinearity—a scenario where predictor variables are highly correlated—became a critical focus. Traditional methods often assumed independence among features, leading to inaccurate importance measures. @basu2022multicollinearity tackled this issue by introducing a framework to adjust for feature correlations when calculating Shapley values. Their method, termed Multicollinearity Corrected (MCC) Shapley values, provided more accurate measures of feature importance by accounting for existing correlations. Their experiments on datasets with moderate to high feature correlations demonstrated the superiority of MCC Shapley values over non-corrected ones, offering a more reliable interpretation of feature importance in the presence of multicollinearity.
- 
-A novel feature selection algorithm leveraging neural networks aims to enhance classification accuracy while reducing computational load by selecting only the most relevant features. This method utilizes feed-forward neural networks (FFNNs) and integrates seamlessly with other classifiers. The algorithm starts with a minimal feature set and iteratively includes additional features based on their contribution to classification accuracy, ensuring that only significant features are selected [@onnia2001feature].
- 
-Experiments on both artificial datasets, like the Monks problems, and real-world datasets, such as the University of Wisconsin Breast Cancer Dataset, the US Congressional Voting Records Dataset, and the Pima Indians Diabetes Dataset, demonstrated significant reductions in the number of features while improving classification accuracy. This approach emphasizes the importance of feature selection in enhancing classification accuracy and reducing computational load, making it a valuable tool for various classification tasks and data collection processes.
- 
-In more recent developments, multiple criteria decision-making (MCDM) methods have been applied to feature selection, particularly in the context of text classification with small datasets. @kou2020evaluation evaluated various feature selection methods using MCDM techniques across multiple text classification datasets. By employing methods like PROMETHEE, they ranked feature selection techniques based on a range of performance measures, including accuracy, stability, and efficiency. Their findings underscored the importance of comprehensive evaluation criteria in selecting the most appropriate feature selection method, tailored to specific dataset characteristics.
- 
-The trajectory of feature selection in machine learning illustrates a progression from simple, univariate methods to sophisticated, model-based approaches that address complex issues like multicollinearity and multi-criteria decision making. Early skepticism about "data dredging" has given way to an appreciation of the nuanced techniques necessary for robust predictive modeling. Feature selection methods have evolved to include similarity-based, information-theoretical-based, sparse-learning-based, statistical-based, filter, wrapper, embedded, hybrid, supervised, semi-supervised, and unsupervised approaches. Modern methods, such as neural networks, further enhance the accuracy and efficiency of feature selection, ensuring that only the most relevant features are utilized. As the field continues to advance, it is clear that feature selection will remain a cornerstone of machine learning, improving model performance and reducing computational complexity across a wide range of applications.
-
-
-## Methods
-Our exploration of feature selection will begin by comparing the performance of various feature selection methods on a variety of real-world datasets. We will look at four different aspects of performance: overall model performance on the holdout set, variance in performance between the training and holdout set, and parsimony of the final model. We explored an algorithm from each category of feature selection methods.
-
-## Methods: Correlation - Based Feature Selection (CFS)
-
-A common filtering method uses the correlation coefficient to measure the relationship between each variable and the target, independently.
-
-CFS's feature subset evaluation function is:
-
-$\text{Ms} = \frac{k\bar{\text{rcf}}}{\sqrt k + k(k - 1)\bar{\text{rff}}}$
-
-where Ms is the heuristic ”merit” of a feature subset S containing k features, $\bar{\text{rcf}}$ is the mean feature-class correlation and $\bar{\text{rff}}$ is the average feature - feature intercorrelation. The numerator of this equation reflects the extent to which a set of features is indicative of the class, while the denominator measures the level of redundancy among the features [@hall1999correlation].
- 
-## Methods: Recursive Feature Elimination (RFE)
-
-RFE is a common wrapper method that removes variables iteratively.
-
-For an unknown input vector x, a linear classifier takes the form
-
-$y(x)=$sign$(w⋅x−b)$
-
-The recursive feature elimination method for support vector machines can be executed through these iterative steps[@guyon2002gene].
-
-1. Train the SVM classifier
-2. compute the ranking criterion for all features
-3. remove the features with smallest ranking values
-
-For LS-SVM, substituting the KKT conditions into the Lagrangian gives the objective function
-
-$L = -\frac{1}{2} \sum \sum \alpha_i \alpha_j (K(x_i, x_j) + \frac{\sigma_{ij}}{C}) + \sum \alpha_i y_i$
-
-Where ${\sigma_{ij}} = 1$ if $i=j$ and $0$ otherwise.
-
-The ranking criterion can be obtained by:
-
-$D(L^{-m}) = -\frac{1}{2} \sum \sum \alpha_i \alpha_j (K(x_i, x_j) - (K(x_i^{-m}, x_j^{-m})$
-
-Where $x_i^{-m}$ , $x_j^{-m}$ are the vectors in which $m$-th feature has been removed.
-
-## Methods: Least Absolute Shrinkage and Selection Operator (LASSO)
-
-LASSO is an embedded method that uses L1 Regularization to shrink coefficients to zero, effectively performing feature selection during parameter estimation. LASSO minimizes the sum of squared errors while imposing an upper limit on the sum of the absolute values of the model parameters.
-
-The LASSO estimate is defined by the solution to the l1 optimization problem
-
-minimize  $\frac{\| Y - X\beta \|_2^2}{n}$ subject to $X \sum_{j=1}^{k} \|\beta_j\|_1 < t$
-
-where $t$ is the upper bound for the sum of the coefficients [@buhlmann2011statistics]
-
-## Methods: CFS & RFE
-
-For the hybrid method, we will combine the filter and wrapper methods; first filtering using the correlation coefficient and then removing variables iteratively using RFE.
-
-## Analysis
-
 ```{r}
 # #| include: false
 #environment setup (hidden from output)
@@ -133,7 +30,7 @@ library(kableExtra)
 FORCE_OVERWRITE <- FALSE
 
 baseline_lambda = 0
-baseline_maxit = 500000
+baseline_maxit = 1000000
 baseline_alpha = 0
 validation_folds = 10
 
@@ -434,11 +331,6 @@ download_kaggle_dataset <- function(dataset, path) {
 
 ```
 
-We evaluated the performance of the methods on two classification tasks. The datasets and associated tasks used were:
-
-## Analysis: Spambase Dataset
-
-The Spambase dataset from the UCI Machine Learning Repository contains 4601 instances of emails, with 57 features for classification tasks to determine whether an email is spam (1) or not (0). Features include word and character frequency counts, as well as measures of consecutive capital letters. It is commonly used for building and testing spam detection models [@misc_spambase_94]. This dataset was selected because it contains a dense set of numeric predictor variables.
 
 ```{r}
 #Importing Spam Data
@@ -460,25 +352,7 @@ raw_column_names <- c(sapply(last_57_lines, extract_column_names), 'flag_spam')
 unique_column_names <- make.unique(raw_column_names)
 spam_data <- read.csv("./data/spambase/spambase.data", header = FALSE, col.names = unique_column_names) %>%
   mutate(flag_spam = factor(flag_spam, levels = c(0, 1)))
-
-# Plotting in graph to see the distribution and find outlier 
-ggplot(spam_data, aes(x = flag_spam)) +
-  geom_bar() +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
-  labs(x = "Spam Or Not", y = "Count", title = "Distribution")
-
-num_columns <- ncol(spam_data) - 1
-num_nonzero <- sum((spam_data %>% select(-flag_spam)) != 0)
-total_elements <- prod(dim(spam_data %>% select(-flag_spam)))
-sparsity <- ((total_elements - num_nonzero) / total_elements) * 100
-
-cat("Number of columns in the training dataset:", num_columns, "\n")
-cat("Average percent of values that are 0 in the training dataset:", sparsity, "%\n")
 ```
-
-## Analysis: COVID-19 NLP Text Classification Dataset
-
-The COVID-19 NLP Text Classification dataset on Kaggle consists of tweets related to COVID-19, labeled for sentiment analysis. It includes features like tweet content, sentiment labels (positive, negative, neutral), and additional metadata. This dataset is designed for natural language processing tasks to analyze public sentiment during the pandemic [@datatattle2024covid]. An NLP task was chosen because the vector of feature space is sparse and of high dimension.
 
 
 ```{r}
@@ -526,57 +400,8 @@ corona_test_dfm <- dfm_match(preprocess_text(corona_test$OriginalTweet), feature
 # Convert DFM to sparse matrix
 corona_train_sparse <- as(corona_train_dfm, "dgCMatrix")
 corona_test_sparse <- as(corona_test_dfm, "dgCMatrix")
-
-# Convert DFM to data frame for visualization
-corona_train_data <- convert(corona_train_dfm, to = "data.frame")
-corona_test_data <- convert(corona_test_dfm, to = "data.frame") 
-
-# Plotting in graph to see the distribution and find outlier
-
-ggplot(corona_train, aes(x = Sentiment)) +
-  geom_bar() +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
-  labs(x = "Sentiment", y = "Count", title = "Distribution of Sentiment Labels")
-
-
-# Calculate and visualize mean, standard deviation, and range of tokens per document
-token_counts <- rowSums(corona_train_dfm)
-
-
-ggplot(data = data.frame(token_counts), aes(x = token_counts)) +
-  geom_histogram(binwidth = 5, color = "black") +
-  labs(title = "Histogram of Token Counts",
-       x = "Token Counts",
-       y = "Frequency") 
-
-
-# Calculate and report sparsity
-num_columns <- ncol(corona_train_dfm)
-num_nonzero <- sum(corona_train_dfm@x != 0)
-total_elements <- prod(dim(corona_train_dfm))
-sparsity <- ((total_elements - num_nonzero) / total_elements) * 100
-
-cat("Number of columns in the training dataset:", num_columns, "\n")
-cat("Average percent of values that are 0 in the training dataset:", sparsity, "%\n")
-
-# Create a word frequency cloud
-# word_freq <- colSums(corona_train_dfm)
-# wordcloud(names(word_freq), freq = word_freq, max.words = 100, random.order = FALSE, colors = brewer.pal(8, "Dark2"))
 ```
 
-
-
-## Statistical Modeling
-
-For each classification task, we held out 30% of the data at random. We evaluated performance on four metrics: f1 score on the holdout set, difference between f1 score on the training and holdout set, and number of variables selected 
-
-To establish a baseline for performance, we first trained a multinomial logistic regression model using all available variables. We then use the four selection methods, training a multinomial logistic regression model on the features selected with each method. 
-
-We used 10-fold cross validation accuracy to select the variables in all methods requiring a validation dataset (RFE, LASSO).
-
-## Results: Spambase Dataset
-
-Data scientists often include interaction terms in a model to capture the combined effect of two or more variables on the target variable. Interaction terms help to identify if the effect of one predictor on the outcome changes at different levels of another predictor, providing a more nuanced and accurate representation of the relationships within the data. This can lead to improved model performance and better insights into complex dependencies between variables. However, including interaction terms in a model significantly increases the number of features, as it involves creating new variables that represent the interactions between the original variables. To explore this effect, we added all possible pairwise interaction terms for the 52 variables in the Spambase data, resulting in $\( \frac{52 \times 51}{2} = 1,326 \)$ additional features. We centered and scaled the original features prior to adding the terms. We use a binary logistic regression to predict if an email is spam (1) or not spam (0).
 
 ```{r}
 set.seed(42)
@@ -600,6 +425,12 @@ levels = levels(y_train)
 preprocess_params <- preProcess(X_train_raw, method = c("center", "scale"))
 X_train <- model.matrix( ~ .^2, predict(preprocess_params, X_train_raw))[, -1]
 X_test <- model.matrix( ~ .^2, predict(preprocess_params, X_test_raw))[, -1]
+
+spam_num_features <- ncol(X_train) 
+spam_num_records<- nrow(X_train) 
+num_nonzero <- sum(model.matrix( ~ .^2, X_train_raw)[, -1] != 0)
+total_elements <- prod(dim(X_train))
+spam_sparsity <- ((total_elements - num_nonzero) / total_elements) * 100
 
 
 baseline_model <- glmnet(
@@ -633,7 +464,7 @@ accuracy_difference <- train_accuracy_score - test_accuracy_score
 
 #save the results
 spam_baseline_non_zero_features <- non_zero_features
-spam_baseline_test_accuracy_score <- train_accuracy_score
+spam_baseline_test_accuracy_score <- test_accuracy_score
 spam_baseline_accuracy_difference <- accuracy_difference
 
 
@@ -646,8 +477,13 @@ if (is.null(cfs_feature_subsets)) {
 optimal_subset <- fromJSON(names(cfs_feature_subsets)[which.max(cfs_feature_subsets)])
 
 # Step 4: Use the optimal threshold to train the final model
-X_train_selected <- X_train[, optimal_subset]
-X_test_selected <- X_test[, optimal_subset]
+X_train_selected <- X_train[, optimal_subset, drop=FALSE]
+X_test_selected <- X_test[, optimal_subset, drop=FALSE]
+
+spam_num_features1 <- ncol(X_train_selected) 
+num_nonzero <- sum(model.matrix( ~ .^2, X_train_raw)[, -1][, optimal_subset, drop=FALSE] != 0)
+total_elements <- prod(dim(X_train_selected))
+spam_sparsity1 <- ((total_elements - num_nonzero) / total_elements) * 100
 
 final_model <- glmnet(X_train_selected, y_train, family = "binomial", alpha = baseline_alpha, maxit = baseline_maxit, lambda.min.ratio = baseline_lambda, parallel = TRUE)
 
@@ -688,6 +524,12 @@ optimal_subset <- fromJSON(names(feature_subsets)[which.max(feature_subsets)])
 # Fit the final model using selected features
 X_train_selected = X_train[, optimal_subset, drop=FALSE]
 X_test_selected = X_test[, optimal_subset, drop=FALSE]
+
+spam_num_features2 <- ncol(X_train_selected) 
+num_nonzero <- sum(model.matrix( ~ .^2, X_train_raw)[, -1][, optimal_subset, drop=FALSE] != 0)
+total_elements <- prod(dim(X_train_selected))
+spam_sparsity2 <- ((total_elements - num_nonzero) / total_elements) * 100
+
 final_model <- glmnet(X_train_selected, y_train, family = "binomial", alpha = baseline_alpha, maxit = baseline_maxit, lambda.min.ratio = baseline_lambda)
 
 # Predict on training and test datasets
@@ -732,11 +574,11 @@ optimal_lambda <- as.double(names(lambdas)[which.min(lambdas)])
 
 
 # Fit the final Lasso model using the best lambda
-final_model <- glmnet(X_train, y_train, family = "binomial", maxit = baseline_maxit, alpha = 1, lambda.min.ratio = optimal_lambda)
+spam_lasso_final_model <- glmnet(X_train, y_train, family = "binomial", maxit = baseline_maxit, alpha = 1, lambda.min.ratio = optimal_lambda)
 
 # Predict on training and test datasets
-train_predictions_prob <- predict(final_model, newx = X_train, s = optimal_lambda, type = "response")
-test_predictions_prob <- predict(final_model, newx = X_test, s = optimal_lambda, type = "response")
+train_predictions_prob <- predict(spam_lasso_final_model, newx = X_train, s = optimal_lambda, type = "response")
+test_predictions_prob <- predict(spam_lasso_final_model, newx = X_test, s = optimal_lambda, type = "response")
 
 # Convert probabilities to class labels (0 or 1)
 train_predictions <- factor(ifelse(train_predictions_prob > 0.5, levels[2], levels[1]), levels = levels)
@@ -748,7 +590,9 @@ test_accuracy_score <- calculate_binary_performance(spam_test$flag_spam, test_pr
 
 # Calculate the number of features
 num_features <- ncol(X_train) 
-non_zero_features <- length(nonzero_feature_indicies(final_model, min(final_model$lambda)))
+non_zero_features <- length(nonzero_feature_indicies(spam_lasso_final_model, min(spam_lasso_final_model$lambda)))
+
+spam_num_features3 <- non_zero_features
 
 # Calculate the difference in accuracy score between train and test data
 accuracy_difference <- train_accuracy_score - test_accuracy_score
@@ -774,6 +618,12 @@ optimal_subset <- fromJSON(names(feature_subsets)[which.max(feature_subsets)])
 # Fit the final model using selected features
 X_train_selected = X_train[, optimal_subset, drop=FALSE]
 X_test_selected = X_test[, optimal_subset, drop=FALSE]
+
+spam_num_features4 <- ncol(X_train_selected) 
+num_nonzero <- sum(model.matrix( ~ .^2, X_train_raw)[, -1][, optimal_subset, drop=FALSE] != 0)
+total_elements <- prod(dim(X_train_selected))
+spam_sparsity4 <- ((total_elements - num_nonzero) / total_elements) * 100
+
 final_model <- glmnet(X_train_selected, y_train, family = "binomial", alpha = baseline_alpha, maxit = baseline_maxit, lambda.min.ratio = baseline_lambda)
 
 # Predict on training and test datasets
@@ -801,33 +651,8 @@ spam_cfs_rfe_test_accuracy_score <- test_accuracy_score
 spam_cfs_rfe_accuracy_difference <- accuracy_difference
 spam_cfs_rfe_plot_data <- subset_performance(feature_subsets)
 
-
-# Create visuals
-var_method <- c('Baseline', 'CFS', 'RFE', 'LASSO', 'CFS + RFE')
-num_features <- c(spam_baseline_non_zero_features, spam_cfs_non_zero_features, spam_rfe_non_zero_features, spam_lasso_non_zero_features, spam_cfs_rfe_non_zero_features)
-accuracy_score <- c(spam_baseline_test_accuracy_score, spam_cfs_test_accuracy_score, spam_rfe_test_accuracy_score, spam_lasso_test_accuracy_score, spam_cfs_rfe_test_accuracy_score)
-accuracy_diff <- c(spam_baseline_accuracy_difference, spam_cfs_accuracy_difference, spam_rfe_accuracy_difference, spam_lasso_accuracy_difference, spam_cfs_rfe_accuracy_difference)
-
-data <- data.frame(var_method, num_features, accuracy_score, accuracy_diff)
-
-# Format numbers
-data <- data %>%
-  mutate(
-    accuracy_score = round(accuracy_score, 3),
-    accuracy_diff = round(accuracy_diff, 3)
-  )
-
-# Create and render the table
-kable(data, format = "html", col.names = c("Method", "Number of Features", "Test Accuracy Score", "Accuracy Decrease from Train")) %>%
-  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
-
 ```
 
-## Results: COVID-19 NLP Text Classification Dataset*
-
-In a bag-of-words NLP classification task, text data is converted into a matrix of word frequencies or occurrences, where each row represents a document and each column represents a unique word from the entire corpus. The classification model then uses this matrix to predict the category of each document. One of the primary challenges in this approach is data sparsity, as most documents contain only a small subset of all possible words, resulting in a sparse matrix with many zero entries. Additionally, the size of the feature space can become extremely large, especially with extensive vocabularies, which can lead to increased computational demands, memory consumption, and the risk of overfitting, necessitating feature selection or dimensionality reduction techniques. 
-
-We explored feature reduction methods on an nlp classifcation task. We first recoded sentiment labels to simplify the classification task: "Extremely Negative" and "Extremely Positive" are combined with "Negative" and "Positive" respectively, and "Neutral" sentiments are filtered out. We then process the Text by tokenizing the tweets, removing punctuation, numbers, and symbols, converting to lowercase, removing English stopwords, and stemming the words. This results in a Document-Feature Matrix (DFM), which is further refined by trimming infrequent terms in the training data and matching the test data features to those in the training set. We use a binary logistic regression to predict if the sentiment of a tweet is positive (1) or negative (0).
 
 ```{r}
 set.seed(42)
@@ -841,6 +666,12 @@ y_train <- corona_train$Sentiment
 y_test <- corona_test$Sentiment
 
 levels = levels(y_train)
+
+covid_num_features <- ncol(train_sparse) 
+covid_num_records<- nrow(train_sparse) 
+num_nonzero <- sum(train_sparse != 0)
+total_elements <- prod(dim(train_sparse))
+covid_sparsity <- ((total_elements - num_nonzero) / total_elements) * 100
 
 # Fit the logistic regression model with glmnet
 
@@ -886,8 +717,13 @@ if (is.null(cfs_feature_subsets)) {
 optimal_subset <- fromJSON(names(cfs_feature_subsets)[which.max(cfs_feature_subsets)])
 
 # Step 4: Use the optimal threshold to train the final model
-train_sparse_selected <- train_sparse[, optimal_subset]
-test_sparse_selected <- test_sparse[, optimal_subset]
+train_sparse_selected <- train_sparse[, optimal_subset, drop=FALSE]
+test_sparse_selected <- test_sparse[, optimal_subset, drop=FALSE]
+
+covid_num_features1 <- ncol(train_sparse_selected) 
+num_nonzero <- sum(train_sparse_selected != 0)
+total_elements <- prod(dim(train_sparse_selected))
+covid_sparsity1 <- ((total_elements - num_nonzero) / total_elements) * 100
 
 final_model <- glmnet(train_sparse_selected, y_train, family = "binomial", alpha = baseline_alpha, maxit = baseline_maxit, lambda.min.ratio = baseline_lambda, parallel = TRUE)
 
@@ -928,6 +764,12 @@ optimal_subset <- fromJSON(names(feature_subsets)[which.max(feature_subsets)])
 # Fit the final model using selected features
 train_sparse_selected = train_sparse[, optimal_subset, drop=FALSE]
 test_sparse_selected = test_sparse[, optimal_subset, drop=FALSE]
+
+covid_num_features2 <- ncol(train_sparse_selected) 
+num_nonzero <- sum(train_sparse_selected != 0)
+total_elements <- prod(dim(train_sparse_selected))
+covid_sparsity2 <- ((total_elements - num_nonzero) / total_elements) * 100
+
 final_model <- glmnet(train_sparse_selected, y_train, family = "binomial", alpha = baseline_alpha, maxit = baseline_maxit, lambda.min.ratio = baseline_lambda)
 
 # Predict on training and test datasets
@@ -990,6 +832,8 @@ test_accuracy_score <- calculate_binary_performance(corona_test$Sentiment, test_
 num_features <- ncol(train_sparse) 
 non_zero_features <- length(nonzero_feature_indicies(final_model, min(final_model$lambda)))
 
+covid_num_features3 <- non_zero_features
+
 # Calculate the difference in accuracy score between train and test data
 accuracy_difference <- train_accuracy_score - test_accuracy_score
 
@@ -1013,6 +857,12 @@ optimal_subset <- fromJSON(names(feature_subsets)[which.max(feature_subsets)])
 # Fit the final model using selected features
 train_sparse_selected = train_sparse[, optimal_subset, drop=FALSE]
 test_sparse_selected = test_sparse[, optimal_subset, drop=FALSE]
+
+covid_num_features4 <- ncol(train_sparse_selected) 
+num_nonzero <- sum(train_sparse_selected != 0)
+total_elements <- prod(dim(train_sparse_selected))
+covid_sparsity4 <- ((total_elements - num_nonzero) / total_elements) * 100
+
 final_model <- glmnet(train_sparse_selected, y_train, family = "binomial", alpha = baseline_alpha, maxit = baseline_maxit, lambda.min.ratio = baseline_lambda)
 
 # Predict on training and test datasets
@@ -1040,8 +890,678 @@ covid_cfs_rfe_test_accuracy_score <- test_accuracy_score
 covid_cfs_rfe_accuracy_difference <- accuracy_difference
 covid_cfs_rfe_plot_data <- subset_performance(feature_subsets)
 
+```
 
-# Create visuals
+
+```{r}
+set.seed(42)
+
+spam_alt_data <- sample_frac(spam_data, .1)
+
+
+# Create a train-test split
+trainIndex <- sample(1:nrow(spam_alt_data), size = 0.8 * nrow(spam_alt_data))
+
+# Split the data
+spam_alt_train <- spam_alt_data[trainIndex, ]
+spam_alt_test <- spam_alt_data[-trainIndex, ]
+
+X_train_raw <- spam_alt_train %>% select(-flag_spam)
+X_test_raw  <- spam_alt_test %>% select(-flag_spam)
+
+y_train  <- spam_alt_train$flag_spam
+y_test <- spam_alt_test$flag_spam
+
+levels = levels(y_train)
+
+# scale the data, calculate all two-way interactions, and drop the intercept
+preprocess_params <- preProcess(X_train_raw, method = c("center", "scale"))
+X_train <- model.matrix( ~ .^2, predict(preprocess_params, X_train_raw))[, -1]
+X_test <- model.matrix( ~ .^2, predict(preprocess_params, X_test_raw))[, -1]
+
+spam_alt_num_features <- ncol(X_train) 
+spam_alt_num_records<- nrow(X_train) 
+num_nonzero <- sum(model.matrix( ~ .^2, X_train_raw)[, -1] != 0)
+total_elements <- prod(dim(X_train))
+spam_alt_sparsity <- ((total_elements - num_nonzero) / total_elements) * 100
+
+
+baseline_model <- glmnet(
+  X_train, 
+  y_train, 
+  family = "binomial", 
+  alpha = baseline_alpha,
+  lambda.min.ratio = baseline_lambda,
+  maxit = baseline_maxit,
+  parallel = TRUE
+)
+
+# Predict on training and test datasets
+train_predictions_prob <- predict(baseline_model, X_train, s = min(baseline_model$lambda), type = "response")
+test_predictions_prob <- predict(baseline_model, X_test, s = min(baseline_model$lambda), type = "response")
+
+# Convert probabilities to class labels (0 or 1)
+train_predictions <- factor(ifelse(train_predictions_prob > 0.5, levels[2], levels[1]), levels = levels)
+test_predictions <- factor(ifelse(test_predictions_prob > 0.5, levels[2], levels[1]), levels = levels)
+
+# Calculate accuracy scores for training and test datasets
+train_accuracy_score <- calculate_binary_performance(spam_alt_train$flag_spam, train_predictions)
+test_accuracy_score <- calculate_binary_performance(spam_alt_test$flag_spam, test_predictions)
+
+# Calculate the number of features
+num_features <- ncol(X_train)
+non_zero_features <- length(nonzero_feature_indicies(baseline_model, min(baseline_model$lambda)))
+
+# Calculate the difference in accuracy score between train and test data
+accuracy_difference <- train_accuracy_score - test_accuracy_score
+
+#save the results
+spam_alt_baseline_non_zero_features <- non_zero_features
+spam_alt_baseline_test_accuracy_score <- test_accuracy_score
+spam_alt_baseline_accuracy_difference <- accuracy_difference
+
+
+
+#CORRELATION FEATURE SELECTION
+cfs_feature_subsets <- cache_parameter('spam_alt_cfs_feature_subsets')
+if (is.null(cfs_feature_subsets)) {
+  cfs_feature_subsets <- cache_parameter('spam_alt_cfs_feature_subsets', CFS_binary_logistic(X_train, y_train, num_folds=validation_folds, num_bins = 20, min_vars = 50, geometric_spacing = TRUE))
+}
+optimal_subset <- fromJSON(names(cfs_feature_subsets)[which.max(cfs_feature_subsets)])
+
+# Step 4: Use the optimal threshold to train the final model
+X_train_selected <- X_train[, optimal_subset, drop=FALSE]
+X_test_selected <- X_test[, optimal_subset, drop=FALSE]
+
+spam_alt_num_features1 <- ncol(X_train_selected) 
+num_nonzero <- sum(model.matrix( ~ .^2, X_train_raw)[, -1][, optimal_subset, drop=FALSE] != 0)
+total_elements <- prod(dim(X_train_selected))
+spam_alt_sparsity1 <- ((total_elements - num_nonzero) / total_elements) * 100
+
+final_model <- glmnet(X_train_selected, y_train, family = "binomial", alpha = baseline_alpha, maxit = baseline_maxit, lambda.min.ratio = baseline_lambda, parallel = TRUE)
+
+# Predict on training and test datasets
+train_predictions_prob <- predict(final_model, X_train_selected, s = min(final_model$lambda), type = "response")
+test_predictions_prob <- predict(final_model, X_test_selected, s = min(final_model$lambda), type = "response")
+
+# Convert probabilities to class labels (0 or 1)
+train_predictions <- factor(ifelse(train_predictions_prob > 0.5, levels[2], levels[1]), levels = levels)
+test_predictions <- factor(ifelse(test_predictions_prob > 0.5, levels[2], levels[1]), levels = levels)
+
+# Calculate accuracy scores for training and test datasets
+train_accuracy_score <- calculate_binary_performance(spam_alt_train$flag_spam, train_predictions)
+test_accuracy_score <- calculate_binary_performance(spam_alt_test$flag_spam, test_predictions)
+
+# Calculate the number of features
+num_features <- ncol(X_train_selected) 
+non_zero_features <- length(nonzero_feature_indicies(final_model, min(final_model$lambda)))
+
+# Calculate the difference in accuracy score between train and test data
+accuracy_difference <- train_accuracy_score - test_accuracy_score
+
+# save the results
+spam_alt_cfs_non_zero_features <- non_zero_features
+spam_alt_cfs_test_accuracy_score <- test_accuracy_score
+spam_alt_cfs_accuracy_difference <- accuracy_difference
+spam_alt_cfs_plot_data <- subset_performance(cfs_feature_subsets)
+
+
+# RECURSIVE FEATURE ELIMINATION
+
+feature_subsets <- cache_parameter('spam_alt_rfe_feature_subsets')
+if (is.null(feature_subsets)) {
+  feature_subsets <- cache_parameter('spam_alt_rfe_feature_subsets', RFE_binary_logistic(X_train, y_train, num_folds=validation_folds, num_bins = 20, min_vars = 50, geometric_spacing = TRUE))
+}
+optimal_subset <- fromJSON(names(feature_subsets)[which.max(feature_subsets)])
+
+# Fit the final model using selected features
+X_train_selected = X_train[, optimal_subset, drop=FALSE]
+X_test_selected = X_test[, optimal_subset, drop=FALSE]
+
+spam_alt_num_features2 <- ncol(X_train_selected) 
+num_nonzero <- sum(model.matrix( ~ .^2, X_train_raw)[, -1][, optimal_subset, drop=FALSE] != 0)
+total_elements <- prod(dim(X_train_selected))
+spam_alt_sparsity2 <- ((total_elements - num_nonzero) / total_elements) * 100
+
+final_model <- glmnet(X_train_selected, y_train, family = "binomial", alpha = baseline_alpha, maxit = baseline_maxit, lambda.min.ratio = baseline_lambda)
+
+# Predict on training and test datasets
+train_predictions_prob <- predict(final_model, newx = X_train_selected, s = min(final_model$lambda), type = "response")
+test_predictions_prob <- predict(final_model, newx = X_test_selected, s = min(final_model$lambda), type = "response")
+
+# Convert probabilities to class labels (0 or 1)
+train_predictions <- factor(ifelse(train_predictions_prob > 0.5, levels[2], levels[1]), levels = levels)
+test_predictions <- factor(ifelse(test_predictions_prob > 0.5, levels[2], levels[1]), levels = levels)
+
+# Calculate accuracy scores for training and test datasets
+train_accuracy_score <- calculate_binary_performance(spam_alt_train$flag_spam, train_predictions)
+test_accuracy_score <- calculate_binary_performance(spam_alt_test$flag_spam, test_predictions)
+
+# Calculate the number of features
+num_features <- ncol(X_train_selected) 
+non_zero_features <- length(nonzero_feature_indicies(final_model, min(final_model$lambda)))
+
+# Calculate the difference in accuracy score between train and test data
+accuracy_difference <- train_accuracy_score - test_accuracy_score
+
+# save the results
+spam_alt_rfe_non_zero_features <- non_zero_features
+spam_alt_rfe_test_accuracy_score <- test_accuracy_score
+spam_alt_rfe_accuracy_difference <- accuracy_difference
+spam_alt_rfe_plot_data <- subset_performance(feature_subsets)
+
+
+#LASSO REGRESSION
+lambdas <- cache_parameter('spam_alt_lasso_lambdas')
+feature_subsets_sizes <- cache_parameter('spam_alt_lasso_feature_subsets_sizes')
+if (is.null(lambdas)) {
+  cv_lasso <- cv.glmnet(X_train, y_train, family = "binomial", alpha = 1, maxit = baseline_maxit, nfolds = validation_folds)
+  lambda_values <- cv_lasso$lambda
+  non_zero_features <- sapply(lambda_values, nonzero_feature_indicies, model = cv_lasso)
+  non_zero_feature_sizes <- sapply(non_zero_features, length)
+  performance <- cv_lasso$cvm
+  lambdas <- cache_parameter('spam_alt_lasso_lambdas', setNames(as.list(performance), as.character(lambda_values)))
+  feature_subsets_sizes <- cache_parameter('spam_alt_lasso_feature_subsets_sizes', setNames(as.list(performance), as.character(non_zero_feature_sizes)))
+}
+optimal_lambda <- as.double(names(lambdas)[which.min(lambdas)])
+
+
+# Fit the final Lasso model using the best lambda
+final_model <- glmnet(X_train, y_train, family = "binomial", maxit = baseline_maxit, alpha = 1, lambda.min.ratio = optimal_lambda)
+
+# Predict on training and test datasets
+train_predictions_prob <- predict(final_model, newx = X_train, s = optimal_lambda, type = "response")
+test_predictions_prob <- predict(final_model, newx = X_test, s = optimal_lambda, type = "response")
+
+# Convert probabilities to class labels (0 or 1)
+train_predictions <- factor(ifelse(train_predictions_prob > 0.5, levels[2], levels[1]), levels = levels)
+test_predictions <- factor(ifelse(test_predictions_prob > 0.5, levels[2], levels[1]), levels = levels)
+
+# Calculate accuracy scores for training and test datasets
+train_accuracy_score <- calculate_binary_performance(spam_alt_train$flag_spam, train_predictions)
+test_accuracy_score <- calculate_binary_performance(spam_alt_test$flag_spam, test_predictions)
+
+# Calculate the number of features
+num_features <- ncol(X_train) 
+non_zero_features <- length(nonzero_feature_indicies(final_model, min(final_model$lambda)))
+
+spam_alt_num_features3 <- non_zero_features
+
+# Calculate the difference in accuracy score between train and test data
+accuracy_difference <- train_accuracy_score - test_accuracy_score
+
+# Save the results
+spam_alt_lasso_non_zero_features <- non_zero_features
+spam_alt_lasso_test_accuracy_score <- test_accuracy_score
+spam_alt_lasso_accuracy_difference <- accuracy_difference
+spam_alt_lasso_plot_data <- data.frame(lengths = as.integer(names(feature_subsets_sizes)), performance = as.numeric(feature_subsets_sizes))
+spam_alt_lasso_plot_data_lambda <- data.frame(lengths = as.integer(names(feature_subsets_sizes)), lambdas = as.double(names(lambdas)))
+
+
+#CFS + RFE REGRESSION
+
+starting_features = fromJSON(names(cfs_feature_subsets)[3])
+feature_subsets <- cache_parameter('spam_alt_cfs_rfe_feature_subsets')
+if (is.null(feature_subsets)) {
+  X_train_cfs_selected <- X_train[, starting_features, drop = FALSE]
+  feature_subsets <- cache_parameter('spam_alt_cfs_rfe_feature_subsets', RFE_binary_logistic(X_train_cfs_selected, y_train, num_folds=validation_folds, num_bins = 20, min_vars = 50, geometric_spacing = FALSE))
+}
+optimal_subset <- fromJSON(names(feature_subsets)[which.max(feature_subsets)])
+
+# Fit the final model using selected features
+X_train_selected = X_train[, optimal_subset, drop=FALSE]
+X_test_selected = X_test[, optimal_subset, drop=FALSE]
+
+spam_alt_num_features4 <- ncol(X_train_selected) 
+num_nonzero <- sum(model.matrix( ~ .^2, X_train_raw)[, -1][, optimal_subset, drop=FALSE] != 0)
+total_elements <- prod(dim(X_train_selected))
+spam_alt_sparsity4 <- ((total_elements - num_nonzero) / total_elements) * 100
+
+final_model <- glmnet(X_train_selected, y_train, family = "binomial", alpha = baseline_alpha, maxit = baseline_maxit, lambda.min.ratio = baseline_lambda)
+
+# Predict on training and test datasets
+train_predictions_prob <- predict(final_model, newx = X_train_selected, s = min(final_model$lambda), type = "response")
+test_predictions_prob <- predict(final_model, newx = X_test_selected, s = min(final_model$lambda), type = "response")
+
+# Convert probabilities to class labels (0 or 1)
+train_predictions <- factor(ifelse(train_predictions_prob > 0.5, levels[2], levels[1]), levels = levels)
+test_predictions <- factor(ifelse(test_predictions_prob > 0.5, levels[2], levels[1]), levels = levels)
+
+# Calculate accuracy scores for training and test datasets
+train_accuracy_score <- calculate_binary_performance(spam_alt_train$flag_spam, train_predictions)
+test_accuracy_score <- calculate_binary_performance(spam_alt_test$flag_spam, test_predictions)
+
+# Calculate the number of features
+num_features <- ncol(X_train_selected) 
+non_zero_features <- length(nonzero_feature_indicies(final_model, min(final_model$lambda)))
+
+# Calculate the difference in accuracy score between train and test data
+accuracy_difference <- train_accuracy_score - test_accuracy_score
+
+# save results
+spam_alt_cfs_rfe_non_zero_features <- non_zero_features
+spam_alt_cfs_rfe_test_accuracy_score <- test_accuracy_score
+spam_alt_cfs_rfe_accuracy_difference <- accuracy_difference
+spam_alt_cfs_rfe_plot_data <- subset_performance(feature_subsets)
+
+
+```
+
+
+```{r}
+set.seed(42)
+
+train_dfm <- dfm_trim(preprocess_text(corona_train$OriginalTweet), min_termfreq = 2)
+test_dfm <- dfm_match(preprocess_text(corona_test$OriginalTweet), features = featnames(train_dfm))
+
+# Convert DFM to sparse matrix
+train_sparse <- as(train_dfm, "dgCMatrix")
+test_sparse <- as(test_dfm, "dgCMatrix")
+
+# Convert Sentiment to numeric for glmnet
+y_train <- corona_train$Sentiment
+y_test <- corona_test$Sentiment
+
+levels = levels(y_train)
+
+
+covid_alt_num_features <- ncol(train_sparse) 
+covid_alt_num_records <- nrow(train_sparse) 
+num_nonzero <- sum(train_sparse != 0)
+total_elements <- prod(dim(train_sparse))
+covid_alt_sparsity <- ((total_elements - num_nonzero) / total_elements) * 100
+
+# Fit the logistic regression model with glmnet
+
+baseline_model <- glmnet(
+  train_sparse, 
+  y_train, 
+  family = "binomial", 
+  alpha = baseline_alpha,
+  lambda.min.ratio = baseline_lambda,
+  maxit = baseline_maxit,
+  parallel = TRUE
+)
+
+# Predict on training and test datasets
+train_predictions_prob <- predict(baseline_model, train_sparse, s = min(baseline_model$lambda), type = "response")
+test_predictions_prob <- predict(baseline_model, test_sparse, s = min(baseline_model$lambda), type = "response")
+
+# Convert probabilities to class labels (0 or 1)
+train_predictions <- factor(ifelse(train_predictions_prob > 0.5, levels[2], levels[1]), levels = levels)
+test_predictions <- factor(ifelse(test_predictions_prob > 0.5, levels[2], levels[1]), levels = levels)
+
+# Calculate accuracy scores for training and test datasets
+train_accuracy_score <- calculate_binary_performance(corona_train$Sentiment, train_predictions)
+test_accuracy_score <- calculate_binary_performance(corona_test$Sentiment, test_predictions)
+
+# Calculate the number of features
+num_features <- ncol(train_sparse)
+non_zero_features <- length(nonzero_feature_indicies(baseline_model, min(baseline_model$lambda)))
+
+# Calculate the difference in accuracy score between train and test data
+accuracy_difference <- train_accuracy_score - test_accuracy_score
+
+# save results
+covid_alt_baseline_non_zero_features <- non_zero_features
+covid_alt_baseline_test_accuracy_score <- test_accuracy_score
+covid_alt_baseline_accuracy_difference <- accuracy_difference
+
+#CORRELATION FEATURE SELECTION
+cfs_feature_subsets <- cache_parameter('covid_alt_cfs_feature_subsets')
+if (is.null(cfs_feature_subsets)) {
+  cfs_feature_subsets <- cache_parameter('covid_alt_cfs_feature_subsets', CFS_binary_logistic(train_sparse, y_train, num_folds=validation_folds, num_bins = 20, min_vars = 50, geometric_spacing = TRUE))
+}
+optimal_subset <- fromJSON(names(cfs_feature_subsets)[which.max(cfs_feature_subsets)])
+
+# Step 4: Use the optimal threshold to train the final model
+train_sparse_selected <- train_sparse[, optimal_subset, drop=FALSE]
+test_sparse_selected <- test_sparse[, optimal_subset, drop=FALSE]
+
+covid_alt_num_features1 <- ncol(train_sparse_selected) 
+num_nonzero <- sum(train_sparse_selected != 0)
+total_elements <- prod(dim(train_sparse_selected))
+covid_alt_sparsity1 <- ((total_elements - num_nonzero) / total_elements) * 100
+
+final_model <- glmnet(train_sparse_selected, y_train, family = "binomial", alpha = baseline_alpha, maxit = baseline_maxit, lambda.min.ratio = baseline_lambda, parallel = TRUE)
+
+# Predict on training and test datasets
+train_predictions_prob <- predict(final_model, train_sparse_selected, s = min(final_model$lambda), type = "response")
+test_predictions_prob <- predict(final_model, test_sparse_selected, s = min(final_model$lambda), type = "response")
+
+# Convert probabilities to class labels (0 or 1)
+train_predictions <- factor(ifelse(train_predictions_prob > 0.5, levels[2], levels[1]), levels = levels)
+test_predictions <- factor(ifelse(test_predictions_prob > 0.5, levels[2], levels[1]), levels = levels)
+
+# Calculate accuracy scores for training and test datasets
+train_accuracy_score <- calculate_binary_performance(corona_train$Sentiment, train_predictions)
+test_accuracy_score <- calculate_binary_performance(corona_test$Sentiment, test_predictions)
+
+# Calculate the number of features
+num_features <- ncol(train_sparse_selected) 
+non_zero_features <- length(nonzero_feature_indicies(final_model, min(final_model$lambda)))
+
+# Calculate the difference in accuracy score between train and test data
+accuracy_difference <- train_accuracy_score - test_accuracy_score
+
+# save the results
+covid_alt_cfs_non_zero_features <- non_zero_features
+covid_alt_cfs_test_accuracy_score <- test_accuracy_score
+covid_alt_cfs_accuracy_difference <- accuracy_difference
+covid_alt_cfs_plot_data <- subset_performance(cfs_feature_subsets)
+
+
+# RECURSIVE FEATURE ELIMINATION
+
+feature_subsets <- cache_parameter('covid_alt_rfe_feature_subsets')
+if (is.null(feature_subsets)) {
+  feature_subsets <- cache_parameter('covid_alt_rfe_feature_subsets', RFE_binary_logistic(train_sparse, y_train, num_folds=validation_folds, num_bins = 20, min_vars = 50, geometric_spacing = TRUE))
+}
+optimal_subset <- fromJSON(names(feature_subsets)[which.max(feature_subsets)])
+
+# Fit the final model using selected features
+train_sparse_selected = train_sparse[, optimal_subset, drop=FALSE]
+test_sparse_selected = test_sparse[, optimal_subset, drop=FALSE]
+
+covid_alt_num_features2 <- ncol(train_sparse_selected) 
+num_nonzero <- sum(train_sparse_selected != 0)
+total_elements <- prod(dim(train_sparse_selected))
+covid_alt_sparsity2 <- ((total_elements - num_nonzero) / total_elements) * 100
+
+final_model <- glmnet(train_sparse_selected, y_train, family = "binomial", alpha = baseline_alpha, maxit = baseline_maxit, lambda.min.ratio = baseline_lambda)
+
+# Predict on training and test datasets
+train_predictions_prob <- predict(final_model, newx = train_sparse_selected, s = min(final_model$lambda), type = "response")
+test_predictions_prob <- predict(final_model, newx = test_sparse_selected, s = min(final_model$lambda), type = "response")
+
+# Convert probabilities to class labels (0 or 1)
+train_predictions <- factor(ifelse(train_predictions_prob > 0.5, levels[2], levels[1]), levels = levels)
+test_predictions <- factor(ifelse(test_predictions_prob > 0.5, levels[2], levels[1]), levels = levels)
+
+# Calculate accuracy scores for training and test datasets
+train_accuracy_score <- calculate_binary_performance(corona_train$Sentiment, train_predictions)
+test_accuracy_score <- calculate_binary_performance(corona_test$Sentiment, test_predictions)
+
+# Calculate the number of features
+num_features <- ncol(train_sparse_selected) 
+non_zero_features <- length(nonzero_feature_indicies(final_model, min(final_model$lambda)))
+
+# Calculate the difference in accuracy score between train and test data
+accuracy_difference <- train_accuracy_score - test_accuracy_score
+
+# save results
+covid_alt_rfe_non_zero_features <- non_zero_features
+covid_alt_rfe_test_accuracy_score <- test_accuracy_score
+covid_alt_rfe_accuracy_difference <- accuracy_difference
+covid_alt_rfe_plot_data <- subset_performance(feature_subsets)
+
+
+#LASSO REGRESSION
+lambdas <- cache_parameter('covid_alt_lasso_lambdas')
+feature_subsets_sizes <- cache_parameter('covid_alt_lasso_feature_subsets_sizes')
+if (is.null(lambdas)) {
+  cv_lasso <- cv.glmnet(train_sparse, y_train, family = "binomial", alpha = 1, maxit = baseline_maxit, nfolds = validation_folds)
+  lambda_values <- cv_lasso$lambda
+  non_zero_features <- sapply(lambda_values, nonzero_feature_indicies, model = cv_lasso)
+  non_zero_feature_sizes <- sapply(non_zero_features, length)
+  performance <- cv_lasso$cvm
+  lambdas <- cache_parameter('covid_alt_lasso_lambdas', setNames(as.list(performance), as.character(lambda_values)))
+  feature_subsets_sizes <- cache_parameter('covid_alt_lasso_feature_subsets_sizes', setNames(as.list(performance), as.character(non_zero_feature_sizes)))
+}
+optimal_lambda <- as.double(names(lambdas)[which.min(lambdas)])
+
+
+# Fit the final Lasso model using the best lambda
+final_model <- glmnet(train_sparse, y_train, family = "binomial", maxit = baseline_maxit, alpha = 1, lambda.min.ratio = optimal_lambda)
+
+# Predict on training and test datasets
+train_predictions_prob <- predict(final_model, newx = train_sparse, s = optimal_lambda, type = "response")
+test_predictions_prob <- predict(final_model, newx = test_sparse, s = optimal_lambda, type = "response")
+
+# Convert probabilities to class labels (0 or 1)
+train_predictions <- factor(ifelse(train_predictions_prob > 0.5, levels[2], levels[1]), levels = levels)
+test_predictions <- factor(ifelse(test_predictions_prob > 0.5, levels[2], levels[1]), levels = levels)
+
+# Calculate accuracy scores for training and test datasets
+train_accuracy_score <- calculate_binary_performance(corona_train$Sentiment, train_predictions)
+test_accuracy_score <- calculate_binary_performance(corona_test$Sentiment, test_predictions)
+
+# Calculate the number of features
+num_features <- ncol(train_sparse) 
+non_zero_features <- length(nonzero_feature_indicies(final_model, min(final_model$lambda)))
+
+covid_alt_num_features3 <-non_zero_features
+
+# Calculate the difference in accuracy score between train and test data
+accuracy_difference <- train_accuracy_score - test_accuracy_score
+
+# Save the results
+covid_alt_lasso_non_zero_features <- non_zero_features
+covid_alt_lasso_test_accuracy_score <- test_accuracy_score
+covid_alt_lasso_accuracy_difference <- accuracy_difference
+covid_alt_lasso_plot_data <- data.frame(lengths = as.integer(names(feature_subsets_sizes)), performance = as.numeric(feature_subsets_sizes))
+covid_alt_lasso_plot_data_lambda <- data.frame(lengths = as.integer(names(feature_subsets_sizes)), lambdas = as.double(names(lambdas)))
+
+#CFS + RFE REGRESSION
+
+starting_features = fromJSON(names(cfs_feature_subsets)[3])
+feature_subsets <- cache_parameter('covid_alt_cfs_rfe_feature_subsets')
+if (is.null(feature_subsets)) {
+  train_sparse_cfs_selected <- train_sparse[, starting_features, drop = FALSE]
+  feature_subsets <- cache_parameter('covid_alt_cfs_rfe_feature_subsets', RFE_binary_logistic(train_sparse_cfs_selected, y_train, num_folds=validation_folds, num_bins = 20, min_vars = 50, geometric_spacing = FALSE))
+}
+optimal_subset <- fromJSON(names(feature_subsets)[which.max(feature_subsets)])
+
+# Fit the final model using selected features
+train_sparse_selected = train_sparse[, optimal_subset, drop=FALSE]
+test_sparse_selected = test_sparse[, optimal_subset, drop=FALSE]
+
+covid_alt_num_features4 <- ncol(train_sparse_selected) 
+num_nonzero <- sum(train_sparse_selected != 0)
+total_elements <- prod(dim(train_sparse_selected))
+covid_alt_sparsity4 <- ((total_elements - num_nonzero) / total_elements) * 100
+
+final_model <- glmnet(train_sparse_selected, y_train, family = "binomial", alpha = baseline_alpha, maxit = baseline_maxit, lambda.min.ratio = baseline_lambda)
+
+# Predict on training and test datasets
+train_predictions_prob <- predict(final_model, newx = train_sparse_selected, s = min(final_model$lambda), type = "response")
+test_predictions_prob <- predict(final_model, newx = test_sparse_selected, s = min(final_model$lambda), type = "response")
+
+# Convert probabilities to class labels (0 or 1)
+train_predictions <- factor(ifelse(train_predictions_prob > 0.5, levels[2], levels[1]), levels = levels)
+test_predictions <- factor(ifelse(test_predictions_prob > 0.5, levels[2], levels[1]), levels = levels)
+
+# Calculate accuracy scores for training and test datasets
+train_accuracy_score <- calculate_binary_performance(corona_train$Sentiment, train_predictions)
+test_accuracy_score <- calculate_binary_performance(corona_test$Sentiment, test_predictions)
+
+# Calculate the number of features
+num_features <- ncol(train_sparse_selected) 
+non_zero_features <- length(nonzero_feature_indicies(final_model, min(final_model$lambda)))
+
+# Calculate the difference in accuracy score between train and test data
+accuracy_difference <- train_accuracy_score - test_accuracy_score
+
+# Save results
+covid_alt_cfs_rfe_non_zero_features <- non_zero_features
+covid_alt_cfs_rfe_test_accuracy_score <- test_accuracy_score
+covid_alt_cfs_rfe_accuracy_difference <- accuracy_difference
+covid_alt_cfs_rfe_plot_data <- subset_performance(feature_subsets)
+
+```
+
+
+## Introduction
+
+What is feature selection? Why do we care?
+
+## Introduction: Early Techniques
+
+-   forward, backward, and stepwise variable selection in linear models.
+
+-   Univariate screening procedures
+
+## Introduction: Modern Techniques
+
+Advanced feature selection methods: 
+
+- similarity-based 
+- information-theoretical-based 
+- sparse-learning-based 
+- statistical-based
+
+Classification of methods 
+
+- Filter 
+- Wrapper 
+- Embedded 
+- Hybrid
+
+
+## Methods: Correlation - Based Feature Selection (CFS)
+
+- Filter method
+- Uses the correlation coefficient to measure the relationship between each variable and the target, independently.
+
+## Methods: Recursive Feature Elimination (RFE)
+
+- Wrapper method
+- Removes variables iteratively.
+
+Steps:
+
+1.  Train the classifier
+2.  compute the ranking criterion for all features
+3.  remove the features with smallest ranking values
+
+
+## Methods: Least Absolute Shrinkage and Selection Operator (LASSO)
+
+- Embedded method
+- Uses L1 Regularization to shrink coefficients to zero, 
+
+
+## Methods: CFS & RFE
+
+- Hybrid method
+- Combines filter and wrapper methods
+
+Step 1: filtering using the correlation coefficient. (e.g. trim the "fat"low hanging fruit")
+Step 2: remove variables iteratively using RFE.
+
+## Analysis: Spambase Dataset
+
+- 4601 instances of emails
+- 57 features for classification tasks
+- Binary classification: email is spam (1) or not (0)
+- 80/20 train/test split
+- Increased number of features by adding all two-way interactions.
+
+```{r}
+# Plotting in graph to see the distribution and find outlier 
+ggplot(spam_data, aes(x = flag_spam)) +
+  geom_bar() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  labs(x = "Spam Or Not", y = "Count", title = "Distribution")
+```
+
+## Analysis: COVID-19 NLP Text Classification Dataset
+
+- 45k tweets related to COVID-19, labeled for sentiment analysis. 
+- Five Sentiment label classes, ranging from extremely positive to extremely negative
+- Recoded to a binary classification task, positive (1) or negative (0)
+- 33,444 (91%) training and 3,179 (9%) testing records after recoding
+
+"Bag of words"
+
+- text data converted into a matrix of word frequencies
+- each row represents a document
+- each column represents a unique word from the entire corpus
+- Large, sparse feature set
+
+
+```{r}
+# Convert DFM to data frame for visualization
+corona_train_data <- convert(corona_train_dfm, to = "data.frame")
+corona_test_data <- convert(corona_test_dfm, to = "data.frame") 
+
+# Plotting in graph to see the distribution and find outlier
+
+ggplot(corona_train, aes(x = Sentiment)) +
+  geom_bar() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  labs(x = "Sentiment", y = "Count", title = "Distribution of Sentiment Labels")
+
+
+# Calculate and visualize mean, standard deviation, and range of tokens per document
+token_counts <- rowSums(corona_train_dfm)
+
+ggplot(data = data.frame(token_counts), aes(x = token_counts)) +
+  geom_histogram(binwidth = 5, color = "black") +
+  labs(title = "Histogram of Token Counts",
+       x = "Token Counts",
+       y = "Frequency") 
+
+# Create a word frequency cloud
+word_freq <- colSums(train_dfm)
+wordcloud(names(word_freq), freq = word_freq, max.words = 100, random.order = FALSE, colors = brewer.pal(8, "Dark2"))
+```
+
+
+## Statistical Modeling
+
+Three metrics: 
+
+- Accuracy on the test set3006
+
+- difference between accuracy on the training and test set (overtraining)
+- number of variables selected (model complexity)
+
+Baseline: Full logistics model with no feature selection
+CFS: Select best of 20 correlation thresholds using cross validation
+RFE: Select best of 20 sized subsets using cross validation
+LASSO: Select best penalty term using cross validation
+CFS + FRE: Remove 20% of variables with lowest correlation, Select best of 20 sized subsets using cross validation
+
+```{r}
+ggplot(covid_cfs_plot_data, aes(x = lengths, y = performance)) +
+  geom_point() +
+  geom_line() +
+  labs(title = "Accuracy vs Number of Features",
+       x = "Number of Features",
+       y = "Cross-validation Accuracy")
+
+
+plot(spam_lasso_final_model)
+```
+## Results: Spambase Dataset
+```{r}
+
+
+# Create visuals for Spambase dataset
+var_method <- c('Baseline', 'CFS', 'RFE', 'LASSO', 'CFS + RFE')
+num_features <- c(spam_baseline_non_zero_features, spam_cfs_non_zero_features, spam_rfe_non_zero_features, spam_lasso_non_zero_features, spam_cfs_rfe_non_zero_features)
+accuracy_score <- c(spam_baseline_test_accuracy_score, spam_cfs_test_accuracy_score, spam_rfe_test_accuracy_score, spam_lasso_test_accuracy_score, spam_cfs_rfe_test_accuracy_score)
+accuracy_diff <- c(spam_baseline_accuracy_difference, spam_cfs_accuracy_difference, spam_rfe_accuracy_difference, spam_lasso_accuracy_difference, spam_cfs_rfe_accuracy_difference)
+
+data <- data.frame(var_method, num_features, accuracy_score, accuracy_diff)
+
+# Format numbers
+data <- data %>%
+  mutate(
+    accuracy_score = round(accuracy_score, 3),
+    accuracy_diff = round(accuracy_diff, 3)
+  )
+
+# Create and render the table
+kable(data, format = "html", col.names = c("Method", "Number of Features", "Test Accuracy Score", "Accuracy Decrease from Train")) %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
+```
+
+## Results: COVID-19 NLP Text Classification Dataset
+
+```{r}
+# Create visuals for Covid dataset
 var_method <- c('Baseline', 'CFS', 'RFE', 'LASSO', 'CFS + RFE')
 num_features <- c(covid_baseline_non_zero_features, covid_cfs_non_zero_features, covid_rfe_non_zero_features, covid_lasso_non_zero_features, covid_cfs_rfe_non_zero_features)
 accuracy_score <- c(covid_baseline_test_accuracy_score, covid_cfs_test_accuracy_score, covid_rfe_test_accuracy_score, covid_lasso_test_accuracy_score, covid_cfs_rfe_test_accuracy_score)
@@ -1059,10 +1579,56 @@ data <- data %>%
 # Create and render the table
 kable(data, format = "html", col.names = c("Method", "Number of Features", "Test Accuracy Score", "Accuracy Decrease from Train")) %>%
   kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
-
 ```
 
 
+## Results: Records per Feature
+
+```{r}
+# Create visuals for trending
+datasets <- c('Spam Baseline', 'Covid Baseline', 'Spam Alt Baseline', 'Covid Alt Baseline',
+              'Spam CFS', 'Covid CFS', 'Spam Alt CFS', 'Covid Alt CFS',
+              'Spam RFE', 'Covid RFE', 'Spam Alt RFE', 'Covid Alt RFE',
+              'Spam LASSO', 'Covid LASSO', 'Spam Alt LASSO', 'Covid Alt LASSO',
+              'Spam RFECFS', 'Covid RFECFS', 'Spam Alt RFECFS', 'Covid Alt RFECFS')
+var_ratio <- c(spam_num_records / spam_num_features, covid_num_records / covid_num_features, spam_alt_num_records / spam_alt_num_features, covid_alt_num_records / covid_alt_num_features,
+               spam_num_records / spam_num_features1, covid_num_records / covid_num_features1, spam_alt_num_records / spam_alt_num_features1, covid_alt_num_records / covid_alt_num_features1,
+               spam_num_records / spam_num_features2, covid_num_records / covid_num_features2, spam_alt_num_records / spam_alt_num_features2, covid_alt_num_records / covid_alt_num_features2,
+               spam_num_records / spam_num_features3, covid_num_records / covid_num_features3, spam_alt_num_records / spam_alt_num_features3, covid_alt_num_records / covid_alt_num_features3,
+               spam_num_records / spam_num_features4, covid_num_records / covid_num_features4, spam_alt_num_records / spam_alt_num_features4, covid_alt_num_records / covid_alt_num_features4)
+accuracy_diff <- c(spam_baseline_accuracy_difference, covid_baseline_accuracy_difference, spam_alt_baseline_accuracy_difference, covid_alt_baseline_accuracy_difference,
+                   spam_cfs_accuracy_difference, covid_cfs_accuracy_difference, spam_alt_cfs_accuracy_difference, covid_alt_cfs_accuracy_difference,
+                   spam_rfe_accuracy_difference, covid_rfe_accuracy_difference, spam_alt_rfe_accuracy_difference, covid_alt_rfe_accuracy_difference,
+                   spam_lasso_accuracy_difference, covid_lasso_accuracy_difference, spam_alt_lasso_accuracy_difference, covid_alt_lasso_accuracy_difference,
+                   spam_cfs_rfe_accuracy_difference, covid_cfs_rfe_accuracy_difference, spam_alt_cfs_rfe_accuracy_difference, covid_alt_cfs_rfe_accuracy_difference)
+sparsity <- c(spam_sparsity, covid_sparsity, spam_alt_sparsity, covid_alt_sparsity,
+              spam_sparsity1, covid_sparsity1, spam_alt_sparsity1, covid_alt_sparsity1,
+              spam_sparsity2, covid_sparsity2, spam_alt_sparsity2, covid_alt_sparsity2,
+              NA, NA, NA, NA,
+              spam_sparsity4, covid_sparsity4, spam_alt_sparsity4, covid_alt_sparsity4)
+
+data <- data.frame(datasets, var_ratio, accuracy_diff, sparsity)
+
+# Format numbers
+data <- data %>%
+  mutate(
+    var_ratio = round(var_ratio, 1),
+    accuracy_diff = round(accuracy_diff, 3),
+    sparsity = round(sparsity, 1)
+  )
+
+ggplot(data, aes(x = var_ratio, y = accuracy_diff)) +
+  geom_point(aes(color = datasets)) +
+  # geom_text(aes(label = paste(datasets, "\nSparsity:", paste0(sparsity, "%"))), vjust = -0.3, hjust = 0) +
+  geom_smooth(method = "lm", formula = y ~ log(x), se = FALSE, color = "blue") +
+  labs(x = "Records per Feature", y = "Baseline Accuracy Decrease from Train") +
+  theme_minimal() +
+  # expand_limits(y = c(0, max(data$accuracy_diff) + 0.05), x = c(0, max(data$var_ratio) + 2)) +
+  guides(color = "none")
+
+```
+  
+## Summary
+
+
 ## Conclusion
-
-
