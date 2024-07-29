@@ -1882,14 +1882,6 @@ ggplot(data, aes(x = var_ratio, y = accuracy_diff)) +
   # expand_limits(y = c(0, max(data$accuracy_diff) + 0.05), x = c(0, max(data$var_ratio) + 2)) +
   guides(color = "none")
 
-ggplot(data, aes(x = sparsity, y = accuracy_diff)) +
-  geom_point(aes(color = datasets)) +
-  # geom_text(aes(label = paste(datasets, "\nSparsity:", paste0(sparsity, "%"))), vjust = -0.3, hjust = 0) +
-  geom_smooth(method = "lm", formula = y ~ log(x), se = FALSE, color = "blue") +
-  labs(x = "Sparsity", y = "Baseline Accuracy Decrease from Train") +
-  theme_minimal() +
-  # expand_limits(y = c(0, max(data$accuracy_diff) + 0.05), x = c(0, max(data$var_ratio) + 2)) +
-  guides(color = "none")
 ```
 
 # Conclusion
