@@ -4,6 +4,7 @@ author: "Jason Case, Abhishek Dugar, Daniel Nkuah, Khoa Tran"
 date: '2024-07-30'
 format: 
   revealjs:
+    theme: serif
     css: slides.css
 course: STA 6257 - Advanced Statistical Modeling
 #always_allow_html: true # this allows to get PDF with HTML features
@@ -11,7 +12,7 @@ self-contained: true
 execute: 
   warning: false
   message: false
-  eval: false  # Prevent code execution
+  # eval: false  # Prevent code execution
 editor: 
   markdown: 
     wrap: 72
@@ -354,7 +355,7 @@ raw_column_names <- c(sapply(last_57_lines, extract_column_names), 'flag_spam')
 # Ensure unique column names
 unique_column_names <- make.unique(raw_column_names)
 spam_data <- read.csv("./data/spambase/spambase.data", header = FALSE, col.names = unique_column_names) %>%
-  mutate(flag_spam = factor(flag_spam, levels = c(0, 1)))
+  mutate(flag_spam = factor(flag_spam, levels = c(0, 1), labels = c("Not Spam", "Spam")))
 ```
 
 ```{r}
@@ -1392,74 +1393,76 @@ covid_alt_cfs_rfe_plot_data <- subset_performance(feature_subsets)
 
 What is feature selection? Why do we care?
 
+- Feature selection is a crucial step in data preprocessing, especially in machine learning and statistical modeling. It involves selecting a subset of relevant features (variables, predictors) for building a model.
+- It is important because it reduces the risk of overfitting and enhances the performance of machine learning models and pattern recognition systems.
+
+
 ## Introduction: Early Techniques
 
--   forward, backward, and stepwise variable selection in linear models.
+Forward, backward, and stepwise variable selection in linear models
 
--   Univariate screening procedures
+- The forward method starts with no variables in the model, and we will add them one by one until no improvement is shown.
+- Backward is when we start with all variables and remove the least significance iteratively.
+- Stepwise selection combines both approaches, iteratively adding and removing variables to optimize the models performance.
+
+## Introduction: Early Techniques
+
+Univariate screening procedures (USP)
+
+- USP represents an important milestone for feature selection.
+- These methods involve evaluating each predictor variable individually to determine its relationship with the target variable. The process selects variables that meet a specific statistical threshold.
+- While these methods are simple and quick to use, they often miss the complex connections between variables.
+
 
 ## Introduction: Modern Techniques
 
-Advanced feature selection methods:
+Advanced feature selection methods
 
--   similarity-based
--   information-theoretical-based
--   sparse-learning-based
--   statistical-based
+- **Similarity-based approaches** select features based on their similarity or dissimilarity.
+- **Information-theoretical-based approaches** use concepts like entropy and mutual information to evaluate feature importance. 
+- **Sparse-learning-based approaches** focus on identifying a small, essential set of features by limiting the number of features selected.
+- **Statistical-based approaches** utilize statistical tests and models to determine the significance of features for predicting the target variable.
 
-Classification of methods
+## Introduction: Modern Techniques
 
--   Filter
--   Wrapper
--   Embedded
--   Hybrid
+Classification of methods 
+
+- The **filter** model selects features based on the general properties of the training data, independent of any learning algorithm, making it computationally efficient for large datasets. 
+- The **wrapper** model, on the other hand, uses a specific learning algorithm to evaluate and determine which features to keep, often leading to better performance but at a higher computational cost. 
+- **Embedded** methods perform feature selection during the model training process, integrating selection directly with learning.
+- **Hybrid** methods combine the best aspects of filter and wrapper methods to achieve optimal performance with manageable computational complexity.
+
 
 ## Methods: Correlation - Based Feature Selection (CFS)
 
 -   Filter method
 -   Uses the correlation coefficient to measure the relationship between
     each variable and the target, independently.
+- Features that are highly correlated are considered redundant.
 
 CFS's feature subset evaluation function is:
 
 $\text{Ms} = \frac{k\bar{\text{rcf}}}{\sqrt k + k(k - 1)\bar{\text{rff}}}$
 
-where Ms is the heuristic ”merit” of a feature subset S containing k
-features, $\bar{\text{rcf}}$ is the mean feature-class correlation and
-$\bar{\text{rff}}$ is the average feature - feature intercorrelation.
-
 ## Methods: Recursive Feature Elimination (RFE)
 
--   Wrapper method
+-   Wrapper method.
 -   Removes variables iteratively.
 
 Steps:
 
-1.  Train the classifier
-2.  compute the ranking criterion for all features
-3.  remove the features with smallest ranking values
+1.  Train the classifier.
+2.  compute the ranking criterion for all features.
+3.  remove the feature(s) with smallest ranking values.
+4.  Repeat until desired number of features selected.
 
-For an unknown input vector x, a linear classifier takes the form
+- optimal subset of features - one that provides the highest accuracy
 
-$y(x)=$sign$(w⋅x−b)$
-
-For LS-SVM, substituting the KKT conditions into the Lagrangian gives
-the objective function
-
-$L = -\frac{1}{2} \sum \sum \alpha_i \alpha_j (K(x_i, x_j) + \frac{\sigma_{ij}}{C}) + \sum \alpha_i y_i$
-
-Where ${\sigma_{ij}} = 1$ if $i=j$ and $0$ otherwise.
-
-The ranking criterion can be obtained by:
-
-$D(L^{-m}) = -\frac{1}{2} \sum \sum \alpha_i \alpha_j (K(x_i, x_j) - (K(x_i^{-m}, x_j^{-m})$
-
-Where $x_i^{-m}$ , $x_j^{-m}$ are the vectors in which $m$-th feature
-has been removed.
 
 ## Methods: Least Absolute Shrinkage and Selection Operator (LASSO)
 
 -   Embedded method
+-   LASSO finds the coefficient of features
 -   Uses L1 Regularization to shrink coefficients to zero,
 
 The LASSO estimate is defined by the solution to the l1 optimization
@@ -1472,13 +1475,13 @@ where $t$ is the upper bound for the sum of the coefficients
 
 ## Methods: CFS & RFE
 
--   Hybrid method
--   Combines filter and wrapper methods
+-   Hybrid method.
+-   Combines filter and wrapper methods.
 
-Step 1: filtering using the correlation coefficient. (e.g. trim the
+Step 1: Filtering using the correlation coefficient. (e.g. trim the
 "low hanging fruit") 
 
-Step 2: remove variables iteratively using RFE.
+Step 2: Remove remaining variables iteratively using RFE.
 
 ## Analysis: Spambase Dataset
 
@@ -1486,14 +1489,29 @@ Step 2: remove variables iteratively using RFE.
 -   57 features for classification tasks
 -   Binary classification: email is spam (1) or not (0)
 -   80/20 train/test split
--   Increased number of features by adding all two-way interactions.
+-   Increased number of features by adding all $(\binom{57}{2} = 1,596)$ two-way interactions
 
+## Analysis: Spambase Dataset
+
+Figure 1. Frequency of spam targets.
 ```{r}
-# Plotting in graph to see the distribution and find outlier 
-ggplot(spam_data, aes(x = flag_spam)) +
-  geom_bar() +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
-  labs(x = "Spam Or Not", y = "Count", title = "Distribution")
+ggplot(spam_data, aes(x = flag_spam, fill = flag_spam)) +
+  geom_bar(color = "black") +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, size = 10, color = "darkblue"),
+    axis.text.y = element_text(size = 10, color = "darkblue"),
+    axis.title.x = element_text(size = 12, face = "bold"),
+    axis.title.y = element_text(size = 12, face = "bold"),
+    plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
+    panel.grid.major = element_line(color = "lightgrey"),
+    panel.grid.minor = element_blank()
+  ) +
+  labs(x = "Spam Or Not", y = "Count", title = "Distribution of Spam vs Not Spam") +
+  scale_y_continuous(labels = scales::comma) +
+  scale_x_discrete(labels = c("Not Spam" = "Not Spam", "Spam" = "Spam")) +
+  scale_fill_manual(values = c("Not Spam" = "red", "Spam" = "blue")) +
+  guides(fill = guide_legend(title = NULL))
 ```
 
 ## Analysis: COVID-19 NLP Text Classification Dataset
@@ -1501,80 +1519,126 @@ ggplot(spam_data, aes(x = flag_spam)) +
 -   45k tweets related to COVID-19, labeled for sentiment analysis.
 -   Five Sentiment label classes, ranging from extremely positive to
     extremely negative
--   Recoded to a binary classification task, positive (1) or negative
-    (0)
+-   Recoded to a binary classification task, positive (1) or negative (0)
 -   33,444 (91%) training and 3,179 (9%) testing records after recoding
 
-"Bag of words"
-
--   text data converted into a matrix of word frequencies
--   each row represents a document
--   each column represents a unique word from the entire corpus
--   Large, sparse feature set
-
+## Analysis: COVID-19 NLP Text Classification Dataset
+Figure 2. Visualization of common words.
 ```{r}
 # Convert DFM to data frame for visualization
 corona_train_data <- convert(corona_train_dfm, to = "data.frame")
 corona_test_data <- convert(corona_test_dfm, to = "data.frame") 
-
-# Plotting in graph to see the distribution and find outlier
-
-ggplot(corona_train, aes(x = Sentiment)) +
-  geom_bar() +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
-  labs(x = "Sentiment", y = "Count", title = "Distribution of Sentiment Labels")
-
-
-# Calculate and visualize mean, standard deviation, and range of tokens per document
-token_counts <- rowSums(corona_train_dfm)
-
-ggplot(data = data.frame(token_counts), aes(x = token_counts)) +
-  geom_histogram(binwidth = 5, color = "black") +
-  labs(title = "Histogram of Token Counts",
-       x = "Token Counts",
-       y = "Frequency") 
 
 # Create a word frequency cloud
 word_freq <- colSums(train_dfm)
 wordcloud(names(word_freq), freq = word_freq, max.words = 100, random.order = FALSE, colors = brewer.pal(8, "Dark2"))
 ```
 
+## Analysis: COVID-19 NLP Text Classification Dataset
+Figure 3. Frequency of sentiment targets.
+```{r}
+
+ggplot(corona_train, aes(x = Sentiment, fill = Sentiment)) +
+  geom_bar(color = "black") +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, size = 10, color = "darkblue"),
+    axis.text.y = element_text(size = 10, color = "darkblue"),
+    axis.title.x = element_text(size = 12, face = "bold"),
+    axis.title.y = element_text(size = 12, face = "bold"),
+    plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
+    panel.grid.major = element_line(color = "lightgrey"),
+    panel.grid.minor = element_blank()
+  ) +
+  labs(x = "Sentiment", y = "Count", title = "Distribution of Sentiment Labels") +
+  scale_y_continuous(labels = scales::comma) +
+  scale_x_discrete(labels = c("Positive" = "Positive", "Negative" = "Negative")) +
+  scale_fill_manual(values = c("Negative" = "red", "Positive" = "blue")) +
+  guides(fill = guide_legend(title = NULL))
+```
+
+
+## Analysis: COVID-19 NLP Text Classification Dataset
+
+"Bag of words"
+
+-   Text data converted into a matrix of word frequencies
+-   Each row represents a document
+-   Each column represents a unique word from the entire corpus
+-   Large (several thousand variables), sparse (> 99% of values = 0) feature set
+
+## Analysis: COVID-19 NLP Text Classification Dataset
+Figure 4. Distribution of words per Tweet.
+```{r}
+# Calculate and visualize mean, standard deviation, and range of tokens per document
+token_counts <- rowSums(corona_train_dfm)
+
+ggplot(data = data.frame(token_counts), aes(x = token_counts)) +
+  geom_histogram(binwidth = 5, color = "black", fill = "blue") +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, size = 10, color = "darkblue"),
+    axis.text.y = element_text(size = 10, color = "darkblue"),
+    axis.title.x = element_text(size = 12, face = "bold"),
+    axis.title.y = element_text(size = 12, face = "bold"),
+    plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
+    panel.grid.major = element_line(color = "lightgrey"),
+    panel.grid.minor = element_blank()
+  ) +
+  labs(title = "Histogram of Token Counts",
+       x = "Token Counts",
+       y = "Frequency") +
+  scale_y_continuous(labels = scales::comma)
+```
+
 ## Statistical Modeling
 
 Three metrics:
 
--   Accuracy on the test set
+- Accuracy on the test set
+- difference between accuracy on the training and test set (overtraining)
+- number of variables selected (model complexity)
 
--   difference between accuracy on the training and test set
-    (overtraining)
+5 models:
 
--   number of variables selected (model complexity)
+- **Baseline** Full logistics model with no feature selection 
+- **CFS** Select best of 20 correlation thresholds using cross validation 
+- **RFE** Select best of 20 sized subsets using cross validation 
+- **LASSO** Select best penalty term using cross validation 
+- **CFS + RFE** Remove 20% of variables with lowest correlation, Select best of 20 sized subsets using cross validation
 
-Baseline: Full logistics model with no feature selection 
-
-CFS: Select best of 20 correlation thresholds using cross validation 
-
-RFE: Select best of 20 sized subsets using cross validation 
-
-LASSO: Select best penalty term using cross validation 
-
-CFS + FRE: Remove 20% of variables with lowest correlation, Select best of 20 sized subsets using cross
-validation
-
+## Statistical Modeling
+Figure 5. Example of cross-validation accuracy with CFS model for the Sentiment task.
 ```{r}
 ggplot(covid_cfs_plot_data, aes(x = lengths, y = performance)) +
   geom_point() +
   geom_line() +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, size = 10, color = "darkblue"),
+    axis.text.y = element_text(size = 10, color = "darkblue"),
+    axis.title.x = element_text(size = 12, face = "bold"),
+    axis.title.y = element_text(size = 12, face = "bold"),
+    plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
+    panel.grid.major = element_line(color = "lightgrey"),
+    panel.grid.minor = element_blank()
+  ) +
   labs(title = "Accuracy vs Number of Features",
        x = "Number of Features",
-       y = "Cross-validation Accuracy")
+       y = "Cross-validation Accuracy") +
+  scale_y_continuous(labels = scales::comma)
+```
 
-
+## Statistical Modeling
+Figure 6. Example of coefficient behavior with LASSO model for the spam task.
+```{r}
 plot(spam_lasso_final_model)
 ```
 
+
 ## Results: Spambase Dataset
 
+Table 1. Results of spam classification task.
 ```{r}
 
 
@@ -1600,6 +1664,7 @@ kable(data, format = "html", col.names = c("Method", "Number of Features", "Test
 
 ## Results: COVID-19 NLP Text Classification Dataset
 
+Table 2. Results of sentiment classification task.
 ```{r}
 # Create visuals for Covid dataset
 var_method <- c('Baseline', 'CFS', 'RFE', 'LASSO', 'CFS + RFE')
@@ -1621,8 +1686,17 @@ kable(data, format = "html", col.names = c("Method", "Number of Features", "Test
   kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
 ```
 
-## Results: Records per Feature
+## Results: Observations per Feature
 
+- Decreased the ratio of observations per feature
+- Selected 10% of records for spam task
+- Increased features for sentiment task by decreasing threshold for "rare" words from 10 to 2.
+- Ran analysis on new datasets
+- reported overfitting as a function of observations per feature
+
+
+## Results: Observations per Feature
+Figure 7. Plot of overfitting as a function of observations per feature.
 ```{r}
 # Create visuals for trending
 datasets <- c('Spam Baseline', 'Covid Baseline', 'Spam Alt Baseline', 'Covid Alt Baseline',
@@ -1660,13 +1734,23 @@ ggplot(data, aes(x = var_ratio, y = accuracy_diff)) +
   geom_point(aes(color = datasets)) +
   # geom_text(aes(label = paste(datasets, "\nSparsity:", paste0(sparsity, "%"))), vjust = -0.3, hjust = 0) +
   geom_smooth(method = "lm", formula = y ~ log(x), se = FALSE, color = "blue") +
-  labs(x = "Records per Feature", y = "Baseline Accuracy Decrease from Train") +
+  labs(x = "Observations per Feature", y = "Baseline Accuracy Decrease from Train", title = "Accuracy Decrease vs Observations per Feature") +
   theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, size = 10, color = "darkblue"),
+    axis.text.y = element_text(size = 10, color = "darkblue"),
+    axis.title.x = element_text(size = 12, face = "bold"),
+    axis.title.y = element_text(size = 12, face = "bold"),
+    plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
+    panel.grid.major = element_line(color = "lightgrey"),
+    panel.grid.minor = element_blank()
+  ) +
   # expand_limits(y = c(0, max(data$accuracy_diff) + 0.05), x = c(0, max(data$var_ratio) + 2)) +
   guides(color = "none")
 
 ```
 
 ## Summary
+
 
 ## Conclusion
