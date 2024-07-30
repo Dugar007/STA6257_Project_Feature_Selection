@@ -1456,14 +1456,14 @@ Steps:
 3.  remove the feature(s) with smallest ranking values.
 4.  Repeat until desired number of features selected.
 
-- optimal subset of features - one that provides the highest accuracy
+- optimal subset of features - one that provides the highest accuracy.
 
 
 ## Methods: Least Absolute Shrinkage and Selection Operator (LASSO)
 
 -   Embedded method
 -   LASSO finds the coefficient of features
--   Uses L1 Regularization to shrink coefficients to zero,
+-   Uses L1 Regularization to shrink coefficients to zero
 
 The LASSO estimate is defined by the solution to the l1 optimization
 problem
@@ -1471,7 +1471,7 @@ problem
 minimize $\frac{\| Y - X\beta \|_2^2}{n}$ subject to
 $X \sum_{j=1}^{k} \|\beta_j\|_1 < t$
 
-where $t$ is the upper bound for the sum of the coefficients
+where $t$ is the upper bound for the sum of the coefficients.
 
 ## Methods: CFS & RFE
 
@@ -1479,17 +1479,17 @@ where $t$ is the upper bound for the sum of the coefficients
 -   Combines filter and wrapper methods.
 
 Step 1: Filtering using the correlation coefficient. (e.g. trim the
-"low hanging fruit") 
+"low hanging fruit"). 
 
 Step 2: Remove remaining variables iteratively using RFE.
 
 ## Analysis: Spambase Dataset
 
 -   4601 instances of emails
--   57 features for classification tasks
--   Binary classification: email is spam (1) or not (0)
--   80/20 train/test split
--   Increased number of features by adding all $(\binom{57}{2} = 1,596)$ two-way interactions
+-   57 features for classification tasks.
+-   Binary classification: email is spam (1) or not (0).
+-   80/20 train/test split.
+-   Increased number of features by adding all $(\binom{57}{2} = 1,596)$ two-way interactions.
 
 ## Analysis: Spambase Dataset
 
@@ -1518,9 +1518,9 @@ ggplot(spam_data, aes(x = flag_spam, fill = flag_spam)) +
 
 -   45k tweets related to COVID-19, labeled for sentiment analysis.
 -   Five Sentiment label classes, ranging from extremely positive to
-    extremely negative
--   Recoded to a binary classification task, positive (1) or negative (0)
--   33,444 (91%) training and 3,179 (9%) testing records after recoding
+    extremely negative.
+-   Recoded to a binary classification task, positive (1) or negative (0).
+-   33,444 (91%) training and 3,179 (9%) testing records after recoding.
 
 ## Analysis: COVID-19 NLP Text Classification Dataset
 Figure 2. Visualization of common words.
@@ -1562,10 +1562,10 @@ ggplot(corona_train, aes(x = Sentiment, fill = Sentiment)) +
 
 "Bag of words"
 
--   Text data converted into a matrix of word frequencies
--   Each row represents a document
--   Each column represents a unique word from the entire corpus
--   Large (several thousand variables), sparse (> 99% of values = 0) feature set
+-   Text data converted into a matrix of word frequencies.
+-   Each row represents a document.
+-   Each column represents a unique word from the entire corpus.
+-   Large (several thousand variables), sparse (> 99% of values = 0) feature set.
 
 ## Analysis: COVID-19 NLP Text Classification Dataset
 Figure 4. Distribution of words per Tweet.
@@ -1595,17 +1595,17 @@ ggplot(data = data.frame(token_counts), aes(x = token_counts)) +
 
 Three metrics:
 
-- Accuracy on the test set
-- difference between accuracy on the training and test set (overtraining)
-- number of variables selected (model complexity)
+- **Accuracy** on the test set.
+- Difference between accuracy on the training and test set (**overfitting**).
+- Number of variables selected (model **complexity**).
 
 5 models:
 
-- **Baseline** Full logistics model with no feature selection 
-- **CFS** Select best of 20 correlation thresholds using cross validation 
-- **RFE** Select best of 20 sized subsets using cross validation 
-- **LASSO** Select best penalty term using cross validation 
-- **CFS + RFE** Remove 20% of variables with lowest correlation, Select best of 20 sized subsets using cross validation
+- **Baseline** Full logistics model with no feature selection.
+- **CFS** Select best of 20 correlation thresholds using cross validation.
+- **RFE** Select best of 20 sized subsets using cross validation. 
+- **LASSO** Select best penalty term using cross validation. 
+- **CFS + RFE** Remove 20% of variables with lowest correlation, Select best of 20 sized subsets using cross validation.
 
 ## Statistical Modeling
 Figure 5. Example of cross-validation accuracy with CFS model for the Sentiment task.
@@ -1688,11 +1688,11 @@ kable(data, format = "html", col.names = c("Method", "Number of Features", "Test
 
 ## Results: Observations per Feature
 
-- Decreased the ratio of observations per feature
-- Selected 10% of records for spam task
+- Decreased the ratio of observations per feature.
+- Selected 10% of records for spam task.
 - Increased features for sentiment task by decreasing threshold for "rare" words from 10 to 2.
-- Ran analysis on new datasets
-- reported overfitting as a function of observations per feature
+- Ran analysis on new datasets.
+- Reported overfitting as a function of observations per feature.
 
 
 ## Results: Observations per Feature
@@ -1752,5 +1752,19 @@ ggplot(data, aes(x = var_ratio, y = accuracy_diff)) +
 
 ## Summary
 
+- Selecting fewer features always results in less overfitting.
+- Sometimes it can improve performance.
+- The is not a "best" feature elimination method.
+- Trade-offs required between model complexity, test accuracy, overfitting, and required compute resources.
 
 ## Conclusion
+
+Is feature selection still relevant?
+
+- Large "big data" datasets have a high ratio of observations to features, even for thousands of features.
+- Models still need to find an optimum solution; a smaller feature space means less exploration is needed to find the best model.
+- Pragmatic constraints: Documentation and dependencies.
+
+
+**Thanks for listening!**
+
