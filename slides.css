@@ -1,0 +1,18 @@
+p {
+  font-size: 0.8em;
+}
+
+img {
+  width: 50%;
+  height: auto;
+}
+
+table {
+  width: 80%;
+  font-size: 0.8em;
+}
+
+/* Ensure list items also have the correct font size */
+ul li, ol li {
+  font-size: 0.8em;  /* Match the font size to the paragraph text */
+}

@@ -2,17 +2,21 @@
 title: "Feature Selection: An Exploration of Algorithm Performance"
 author: "Jason Case, Abhishek Dugar, Daniel Nkuah, Khoa Tran"
 date: '2024-07-30'
-format: revealjs
+format: 
+  revealjs:
+    css: slides.css
 course: STA 6257 - Advanced Statistical Modeling
 #always_allow_html: true # this allows to get PDF with HTML features
 self-contained: true
 execute: 
   warning: false
   message: false
+  eval: false  # Prevent code execution
 editor: 
   markdown: 
     wrap: 72
 ---
+
 ```{r}
 # #| include: false
 #environment setup (hidden from output)
@@ -331,7 +335,6 @@ download_kaggle_dataset <- function(dataset, path) {
 
 ```
 
-
 ```{r}
 #Importing Spam Data
 last_57_lines <- tail(readLines("./data/spambase/spambase.names"), 57)
@@ -353,7 +356,6 @@ unique_column_names <- make.unique(raw_column_names)
 spam_data <- read.csv("./data/spambase/spambase.data", header = FALSE, col.names = unique_column_names) %>%
   mutate(flag_spam = factor(flag_spam, levels = c(0, 1)))
 ```
-
 
 ```{r}
 # Importing Train Data
@@ -401,7 +403,6 @@ corona_test_dfm <- dfm_match(preprocess_text(corona_test$OriginalTweet), feature
 corona_train_sparse <- as(corona_train_dfm, "dgCMatrix")
 corona_test_sparse <- as(corona_test_dfm, "dgCMatrix")
 ```
-
 
 ```{r}
 set.seed(42)
@@ -653,7 +654,6 @@ spam_cfs_rfe_plot_data <- subset_performance(feature_subsets)
 
 ```
 
-
 ```{r}
 set.seed(42)
 
@@ -891,7 +891,6 @@ covid_cfs_rfe_accuracy_difference <- accuracy_difference
 covid_cfs_rfe_plot_data <- subset_performance(feature_subsets)
 
 ```
-
 
 ```{r}
 set.seed(42)
@@ -1147,7 +1146,6 @@ spam_alt_cfs_rfe_plot_data <- subset_performance(feature_subsets)
 
 ```
 
-
 ```{r}
 set.seed(42)
 
@@ -1390,7 +1388,6 @@ covid_alt_cfs_rfe_plot_data <- subset_performance(feature_subsets)
 
 ```
 
-
 ## Introduction
 
 What is feature selection? Why do we care?
@@ -1403,25 +1400,25 @@ What is feature selection? Why do we care?
 
 ## Introduction: Modern Techniques
 
-Advanced feature selection methods: 
+Advanced feature selection methods:
 
-- similarity-based 
-- information-theoretical-based 
-- sparse-learning-based 
-- statistical-based
+-   similarity-based
+-   information-theoretical-based
+-   sparse-learning-based
+-   statistical-based
 
-Classification of methods 
+Classification of methods
 
-- Filter 
-- Wrapper 
-- Embedded 
-- Hybrid
-
+-   Filter
+-   Wrapper
+-   Embedded
+-   Hybrid
 
 ## Methods: Correlation - Based Feature Selection (CFS)
 
-- Filter method
-- Uses the correlation coefficient to measure the relationship between each variable and the target, independently.
+-   Filter method
+-   Uses the correlation coefficient to measure the relationship between
+    each variable and the target, independently.
 
 CFS's feature subset evaluation function is:
 
@@ -1433,8 +1430,8 @@ $\bar{\text{rff}}$ is the average feature - feature intercorrelation.
 
 ## Methods: Recursive Feature Elimination (RFE)
 
-- Wrapper method
-- Removes variables iteratively.
+-   Wrapper method
+-   Removes variables iteratively.
 
 Steps:
 
@@ -1462,8 +1459,8 @@ has been removed.
 
 ## Methods: Least Absolute Shrinkage and Selection Operator (LASSO)
 
-- Embedded method
-- Uses L1 Regularization to shrink coefficients to zero, 
+-   Embedded method
+-   Uses L1 Regularization to shrink coefficients to zero,
 
 The LASSO estimate is defined by the solution to the l1 optimization
 problem
@@ -1475,19 +1472,21 @@ where $t$ is the upper bound for the sum of the coefficients
 
 ## Methods: CFS & RFE
 
-- Hybrid method
-- Combines filter and wrapper methods
+-   Hybrid method
+-   Combines filter and wrapper methods
 
-Step 1: filtering using the correlation coefficient. (e.g. trim the "fat"low hanging fruit")
+Step 1: filtering using the correlation coefficient. (e.g. trim the
+"low hanging fruit") 
+
 Step 2: remove variables iteratively using RFE.
 
 ## Analysis: Spambase Dataset
 
-- 4601 instances of emails
-- 57 features for classification tasks
-- Binary classification: email is spam (1) or not (0)
-- 80/20 train/test split
-- Increased number of features by adding all two-way interactions.
+-   4601 instances of emails
+-   57 features for classification tasks
+-   Binary classification: email is spam (1) or not (0)
+-   80/20 train/test split
+-   Increased number of features by adding all two-way interactions.
 
 ```{r}
 # Plotting in graph to see the distribution and find outlier 
@@ -1499,18 +1498,19 @@ ggplot(spam_data, aes(x = flag_spam)) +
 
 ## Analysis: COVID-19 NLP Text Classification Dataset
 
-- 45k tweets related to COVID-19, labeled for sentiment analysis. 
-- Five Sentiment label classes, ranging from extremely positive to extremely negative
-- Recoded to a binary classification task, positive (1) or negative (0)
-- 33,444 (91%) training and 3,179 (9%) testing records after recoding
+-   45k tweets related to COVID-19, labeled for sentiment analysis.
+-   Five Sentiment label classes, ranging from extremely positive to
+    extremely negative
+-   Recoded to a binary classification task, positive (1) or negative
+    (0)
+-   33,444 (91%) training and 3,179 (9%) testing records after recoding
 
 "Bag of words"
 
-- text data converted into a matrix of word frequencies
-- each row represents a document
-- each column represents a unique word from the entire corpus
-- Large, sparse feature set
-
+-   text data converted into a matrix of word frequencies
+-   each row represents a document
+-   each column represents a unique word from the entire corpus
+-   Large, sparse feature set
 
 ```{r}
 # Convert DFM to data frame for visualization
@@ -1539,21 +1539,27 @@ word_freq <- colSums(train_dfm)
 wordcloud(names(word_freq), freq = word_freq, max.words = 100, random.order = FALSE, colors = brewer.pal(8, "Dark2"))
 ```
 
-
 ## Statistical Modeling
 
-Three metrics: 
+Three metrics:
 
-- Accuracy on the test set
+-   Accuracy on the test set
 
-- difference between accuracy on the training and test set (overtraining)
-- number of variables selected (model complexity)
+-   difference between accuracy on the training and test set
+    (overtraining)
 
-Baseline: Full logistics model with no feature selection
-CFS: Select best of 20 correlation thresholds using cross validation
-RFE: Select best of 20 sized subsets using cross validation
-LASSO: Select best penalty term using cross validation
-CFS + FRE: Remove 20% of variables with lowest correlation, Select best of 20 sized subsets using cross validation
+-   number of variables selected (model complexity)
+
+Baseline: Full logistics model with no feature selection 
+
+CFS: Select best of 20 correlation thresholds using cross validation 
+
+RFE: Select best of 20 sized subsets using cross validation 
+
+LASSO: Select best penalty term using cross validation 
+
+CFS + FRE: Remove 20% of variables with lowest correlation, Select best of 20 sized subsets using cross
+validation
 
 ```{r}
 ggplot(covid_cfs_plot_data, aes(x = lengths, y = performance)) +
@@ -1566,7 +1572,9 @@ ggplot(covid_cfs_plot_data, aes(x = lengths, y = performance)) +
 
 plot(spam_lasso_final_model)
 ```
+
 ## Results: Spambase Dataset
+
 ```{r}
 
 
@@ -1613,7 +1621,6 @@ kable(data, format = "html", col.names = c("Method", "Number of Features", "Test
   kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
 ```
 
-
 ## Results: Records per Feature
 
 ```{r}
@@ -1659,8 +1666,7 @@ ggplot(data, aes(x = var_ratio, y = accuracy_diff)) +
   guides(color = "none")
 
 ```
-  
-## Summary
 
+## Summary
 
 ## Conclusion
