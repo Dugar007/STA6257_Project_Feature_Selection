@@ -12,6 +12,7 @@ self-contained: true
 execute: 
   warning: false
   message: false
+  eval: false
 editor: 
   markdown: 
     wrap: 72

@@ -1419,14 +1419,11 @@ Classification of methods
 -   Filter method
 -   Uses the correlation coefficient to measure the relationship between
     each variable and the target, independently.
+- Features that are highly correlated are considered redundant.
 
 CFS's feature subset evaluation function is:
 
 $\text{Ms} = \frac{k\bar{\text{rcf}}}{\sqrt k + k(k - 1)\bar{\text{rff}}}$
-
-where Ms is the heuristic ”merit” of a feature subset S containing k
-features, $\bar{\text{rcf}}$ is the mean feature-class correlation and
-$\bar{\text{rff}}$ is the average feature - feature intercorrelation.
 
 ## Methods: Recursive Feature Elimination (RFE)
 
@@ -1439,27 +1436,13 @@ Steps:
 2.  compute the ranking criterion for all features
 3.  remove the features with smallest ranking values
 
-For an unknown input vector x, a linear classifier takes the form
+- optimal subset of features - one that provides the highest accuracy
 
-$y(x)=$sign$(w⋅x−b)$
-
-For LS-SVM, substituting the KKT conditions into the Lagrangian gives
-the objective function
-
-$L = -\frac{1}{2} \sum \sum \alpha_i \alpha_j (K(x_i, x_j) + \frac{\sigma_{ij}}{C}) + \sum \alpha_i y_i$
-
-Where ${\sigma_{ij}} = 1$ if $i=j$ and $0$ otherwise.
-
-The ranking criterion can be obtained by:
-
-$D(L^{-m}) = -\frac{1}{2} \sum \sum \alpha_i \alpha_j (K(x_i, x_j) - (K(x_i^{-m}, x_j^{-m})$
-
-Where $x_i^{-m}$ , $x_j^{-m}$ are the vectors in which $m$-th feature
-has been removed.
 
 ## Methods: Least Absolute Shrinkage and Selection Operator (LASSO)
 
 -   Embedded method
+-   LASSO finds the coefficient of features
 -   Uses L1 Regularization to shrink coefficients to zero,
 
 The LASSO estimate is defined by the solution to the l1 optimization
@@ -1472,7 +1455,7 @@ where $t$ is the upper bound for the sum of the coefficients
 
 ## Methods: CFS & RFE
 
--   Hybrid method
+-   Hybrid method - combines multiple feature selection methods 
 -   Combines filter and wrapper methods
 
 Step 1: filtering using the correlation coefficient. (e.g. trim the
