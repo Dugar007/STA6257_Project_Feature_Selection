@@ -1395,11 +1395,12 @@ What is feature selection? Why do we care?
 
 - Feature selection is a crucial step in data preprocessing, especially in machine learning and statistical modeling. It involves selecting a subset of relevant features (variables, predictors) for building a model.
 - It is important because it reduces the risk of overfitting and enhances the performance of machine learning models and pattern recognition systems.
+- The goal/ objective of the study is to compare the performance of various feature selection methods on a variety of real-world datasets.
 
 
 ## Introduction: Early Techniques
 
-Forward, backward, and stepwise variable selection in linear models
+Forward, backward, and stepwise variable selection in linear models.
 
 - The forward method starts with no variables in the model, and we will add them one by one until no improvement is shown.
 - Backward is when we start with all variables and remove the least significance iteratively.
@@ -1407,7 +1408,7 @@ Forward, backward, and stepwise variable selection in linear models
 
 ## Introduction: Early Techniques
 
-Univariate screening procedures (USP)
+Univariate screening procedures (USP).
 
 - USP represents an important milestone for feature selection.
 - These methods involve evaluating each predictor variable individually to determine its relationship with the target variable. The process selects variables that meet a specific statistical threshold.
@@ -1416,7 +1417,7 @@ Univariate screening procedures (USP)
 
 ## Introduction: Modern Techniques
 
-Advanced feature selection methods
+Advanced feature selection methods.
 
 - **Similarity-based approaches** select features based on their similarity or dissimilarity.
 - **Information-theoretical-based approaches** use concepts like entropy and mutual information to evaluate feature importance. 
@@ -1425,7 +1426,7 @@ Advanced feature selection methods
 
 ## Introduction: Modern Techniques
 
-Classification of methods 
+Classification of methods.
 
 - The **filter** model selects features based on the general properties of the training data, independent of any learning algorithm, making it computationally efficient for large datasets. 
 - The **wrapper** model, on the other hand, uses a specific learning algorithm to evaluate and determine which features to keep, often leading to better performance but at a higher computational cost. 
@@ -1435,10 +1436,10 @@ Classification of methods
 
 ## Methods: Correlation - Based Feature Selection (CFS)
 
--   Filter method
+-   Filter method.
 -   Uses the correlation coefficient to measure the relationship between
     each variable and the target, independently.
-- Features that are highly correlated are considered redundant.
+-  Features that are highly correlated are considered important.
 
 CFS's feature subset evaluation function is:
 
@@ -1523,19 +1524,7 @@ ggplot(spam_data, aes(x = flag_spam, fill = flag_spam)) +
 -   33,444 (91%) training and 3,179 (9%) testing records after recoding.
 
 ## Analysis: COVID-19 NLP Text Classification Dataset
-Figure 2. Visualization of common words.
-```{r}
-# Convert DFM to data frame for visualization
-corona_train_data <- convert(corona_train_dfm, to = "data.frame")
-corona_test_data <- convert(corona_test_dfm, to = "data.frame") 
-
-# Create a word frequency cloud
-word_freq <- colSums(train_dfm)
-wordcloud(names(word_freq), freq = word_freq, max.words = 100, random.order = FALSE, colors = brewer.pal(8, "Dark2"))
-```
-
-## Analysis: COVID-19 NLP Text Classification Dataset
-Figure 3. Frequency of sentiment targets.
+Figure 2. Frequency of sentiment targets.
 ```{r}
 
 ggplot(corona_train, aes(x = Sentiment, fill = Sentiment)) +
@@ -1567,30 +1556,6 @@ ggplot(corona_train, aes(x = Sentiment, fill = Sentiment)) +
 -   Each column represents a unique word from the entire corpus.
 -   Large (several thousand variables), sparse (> 99% of values = 0) feature set.
 
-## Analysis: COVID-19 NLP Text Classification Dataset
-Figure 4. Distribution of words per Tweet.
-```{r}
-# Calculate and visualize mean, standard deviation, and range of tokens per document
-token_counts <- rowSums(corona_train_dfm)
-
-ggplot(data = data.frame(token_counts), aes(x = token_counts)) +
-  geom_histogram(binwidth = 5, color = "black", fill = "blue") +
-  theme_minimal() +
-  theme(
-    axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, size = 10, color = "darkblue"),
-    axis.text.y = element_text(size = 10, color = "darkblue"),
-    axis.title.x = element_text(size = 12, face = "bold"),
-    axis.title.y = element_text(size = 12, face = "bold"),
-    plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
-    panel.grid.major = element_line(color = "lightgrey"),
-    panel.grid.minor = element_blank()
-  ) +
-  labs(title = "Histogram of Token Counts",
-       x = "Token Counts",
-       y = "Frequency") +
-  scale_y_continuous(labels = scales::comma)
-```
-
 ## Statistical Modeling
 
 Three metrics:
@@ -1606,34 +1571,6 @@ Three metrics:
 - **RFE** Select best of 20 sized subsets using cross validation. 
 - **LASSO** Select best penalty term using cross validation. 
 - **CFS + RFE** Remove 20% of variables with lowest correlation, Select best of 20 sized subsets using cross validation.
-
-## Statistical Modeling
-Figure 5. Example of cross-validation accuracy with CFS model for the Sentiment task.
-```{r}
-ggplot(covid_cfs_plot_data, aes(x = lengths, y = performance)) +
-  geom_point() +
-  geom_line() +
-  theme_minimal() +
-  theme(
-    axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, size = 10, color = "darkblue"),
-    axis.text.y = element_text(size = 10, color = "darkblue"),
-    axis.title.x = element_text(size = 12, face = "bold"),
-    axis.title.y = element_text(size = 12, face = "bold"),
-    plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
-    panel.grid.major = element_line(color = "lightgrey"),
-    panel.grid.minor = element_blank()
-  ) +
-  labs(title = "Accuracy vs Number of Features",
-       x = "Number of Features",
-       y = "Cross-validation Accuracy") +
-  scale_y_continuous(labels = scales::comma)
-```
-
-## Statistical Modeling
-Figure 6. Example of coefficient behavior with LASSO model for the spam task.
-```{r}
-plot(spam_lasso_final_model)
-```
 
 
 ## Results: Spambase Dataset
@@ -1696,7 +1633,7 @@ kable(data, format = "html", col.names = c("Method", "Number of Features", "Test
 
 
 ## Results: Observations per Feature
-Figure 7. Plot of overfitting as a function of observations per feature.
+Figure 3. Plot of overfitting as a function of observations per feature.
 ```{r}
 # Create visuals for trending
 datasets <- c('Spam Baseline', 'Covid Baseline', 'Spam Alt Baseline', 'Covid Alt Baseline',
