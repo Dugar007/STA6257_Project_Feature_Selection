@@ -1414,16 +1414,6 @@ Univariate screening procedures (USP).
 - These methods involve evaluating each predictor variable individually to determine its relationship with the target variable. The process selects variables that meet a specific statistical threshold.
 - While these methods are simple and quick to use, they often miss the complex connections between variables.
 
-
-## Introduction: Modern Techniques
-
-Advanced feature selection methods.
-
-- **Similarity-based approaches** select features based on their similarity or dissimilarity.
-- **Information-theoretical-based approaches** use concepts like entropy and mutual information to evaluate feature importance. 
-- **Sparse-learning-based approaches** focus on identifying a small, essential set of features by limiting the number of features selected.
-- **Statistical-based approaches** utilize statistical tests and models to determine the significance of features for predicting the target variable.
-
 ## Introduction: Modern Techniques
 
 Classification of methods.
@@ -1691,7 +1681,7 @@ ggplot(data, aes(x = var_ratio, y = accuracy_diff)) +
 
 - Selecting fewer features always results in less overfitting.
 - Sometimes it can improve performance.
-- The is not a "best" feature elimination method.
+- There is not a "best" feature elimination method.
 - Trade-offs required between model complexity, test accuracy, overfitting, and required compute resources.
 
 ## Conclusion
