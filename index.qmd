@@ -12,7 +12,7 @@ self-contained: true
 execute: 
   warning: false
   message: false
-  eval: false
+  # eval: false
 editor: 
   markdown: 
     wrap: 72
@@ -626,7 +626,7 @@ download_kaggle_dataset <- function(dataset, path) {
 
 ```
 
-## Data and Visualization
+## Data Discussion
 
 We evaluated the performance of the methods on two classification tasks.
 The datasets and associated tasks used were:
@@ -635,11 +635,26 @@ The datasets and associated tasks used were:
 
 The Spambase dataset from the UCI Machine Learning Repository contains
 4601 instances of emails, with 57 features for classification tasks to
-determine whether an email is spam (1) or not (0). Features include word
+determine whether an email is spam or not (Figure 1). Features include word
 and character frequency counts, as well as measures of consecutive
 capital letters. It is commonly used for building and testing spam
-detection models [@misc_spambase_94]. This dataset was selected because
-it contains a dense set of numeric predictor variables.
+detection models [@misc_spambase_94].
+
+Data scientists often include interaction terms in a model to capture
+the combined effect of two or more variables on the target variable.
+Interaction terms help to identify if the effect of one predictor on the
+outcome changes at different levels of another predictor, providing a
+more nuanced and accurate representation of the relationships within the
+data. This can lead to improved model performance and better insights
+into complex dependencies between variables. However, including
+interaction terms in a model significantly increases the number of
+features, as it involves creating new variables that represent the
+interactions between the original variables. To explore this effect, we
+added all possible pairwise interaction terms for the 52 variables in
+the Spambase data, resulting in $(\binom{57}{2} = 1,596)$
+additional features. We centered and scaled the original features prior
+to adding the terms. We use a binary logistic regression to predict if
+an email is spam (1) or not spam (0). We held out 20% of the data at random for testing.
 
 ```{r}
 #Importing Spam Data
@@ -660,14 +675,31 @@ raw_column_names <- c(sapply(last_57_lines, extract_column_names), 'flag_spam')
 # Ensure unique column names
 unique_column_names <- make.unique(raw_column_names)
 spam_data <- read.csv("./data/spambase/spambase.data", header = FALSE, col.names = unique_column_names) %>%
-  mutate(flag_spam = factor(flag_spam, levels = c(0, 1)))
-
-# Plotting in graph to see the distribution and find outlier 
-ggplot(spam_data, aes(x = flag_spam)) +
-  geom_bar() +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
-  labs(x = "Spam Or Not", y = "Count", title = "Distribution")
+  mutate(flag_spam = factor(flag_spam, levels = c(0, 1), labels = c("Not Spam", "Spam")))
 ```
+
+
+
+```{r}
+ggplot(spam_data, aes(x = flag_spam, fill = flag_spam)) +
+  geom_bar(color = "black") +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, size = 10, color = "darkblue"),
+    axis.text.y = element_text(size = 10, color = "darkblue"),
+    axis.title.x = element_text(size = 12, face = "bold"),
+    axis.title.y = element_text(size = 12, face = "bold"),
+    plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
+    panel.grid.major = element_line(color = "lightgrey"),
+    panel.grid.minor = element_blank()
+  ) +
+  labs(x = "Spam Or Not", y = "Count", title = "Distribution of Spam vs Not Spam") +
+  scale_y_continuous(labels = scales::comma) +
+  scale_x_discrete(labels = c("Not Spam" = "Not Spam", "Spam" = "Spam")) +
+  scale_fill_manual(values = c("Not Spam" = "red", "Spam" = "blue")) +
+  guides(fill = guide_legend(title = NULL))
+```
+*Figure 1. Frequency of spam targets.*
 
 **COVID-19 NLP Text Classification Dataset**
 
@@ -676,8 +708,31 @@ tweets related to COVID-19, labeled for sentiment analysis. It includes
 features like tweet content, sentiment labels (positive, negative,
 neutral), and additional metadata. This dataset is designed for natural
 language processing tasks to analyze public sentiment during the
-pandemic [@datatattle2024covid]. An NLP task was chosen because the
-vector of feature space is sparse and of high dimension.
+pandemic [@datatattle2024covid].
+
+We recoded sentiment labels to simplify the classification task:
+"Extremely Negative" and "Extremely Positive" are combined with
+"Negative" and "Positive" respectively, and "Neutral" sentiments are
+filtered out (Figure 2). We then processed the text into a "bag of words". In a "bag of words" NLP classification task, text data is converted into a
+matrix of word frequencies or occurrences, where each row represents a
+document and each column represents a unique word from the entire
+corpus. The classification model then uses this matrix to predict the
+category of each document. We processed the text by tokenizing the tweets,
+removing punctuation, numbers, and symbols, converting to lowercase,
+removing English stopwords, and stemming the words. This results in a
+Document-Feature Matrix (DFM), which is further refined by trimming
+infrequent terms in the training data and matching the test data
+features to those in the training set (9% of data was held out for testing). The distribution of words per "bag" is illustrated in Figure 3.
+
+One of the primary challenges in this
+approach is data sparsity, as most documents contain only a small subset
+of all possible words, resulting in a sparse matrix with many zero
+entries. Additionally, the size of the feature space can become
+extremely large, especially with extensive vocabularies, which can lead
+to increased computational demands, memory consumption, and the risk of
+overfitting, necessitating feature selection or dimensionality reduction
+techniques.
+
 
 ```{r}
 # Importing Train Data
@@ -724,63 +779,74 @@ corona_test_dfm <- dfm_match(preprocess_text(corona_test$OriginalTweet), feature
 # Convert DFM to sparse matrix
 corona_train_sparse <- as(corona_train_dfm, "dgCMatrix")
 corona_test_sparse <- as(corona_test_dfm, "dgCMatrix")
-
-# Convert DFM to data frame for visualization
-corona_train_data <- convert(corona_train_dfm, to = "data.frame")
-corona_test_data <- convert(corona_test_dfm, to = "data.frame") 
-
-# Plotting in graph to see the distribution and find outlier
-
-ggplot(corona_train, aes(x = Sentiment)) +
-  geom_bar() +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
-  labs(x = "Sentiment", y = "Count", title = "Distribution of Sentiment Labels")
+```
 
 
+```{r}
+
+ggplot(corona_train, aes(x = Sentiment, fill = Sentiment)) +
+  geom_bar(color = "black") +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, size = 10, color = "darkblue"),
+    axis.text.y = element_text(size = 10, color = "darkblue"),
+    axis.title.x = element_text(size = 12, face = "bold"),
+    axis.title.y = element_text(size = 12, face = "bold"),
+    plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
+    panel.grid.major = element_line(color = "lightgrey"),
+    panel.grid.minor = element_blank()
+  ) +
+  labs(x = "Sentiment", y = "Count", title = "Distribution of Sentiment Labels") +
+  scale_y_continuous(labels = scales::comma) +
+  scale_x_discrete(labels = c("Positive" = "Positive", "Negative" = "Negative")) +
+  scale_fill_manual(values = c("Negative" = "red", "Positive" = "blue")) +
+  guides(fill = guide_legend(title = NULL))
+```
+*Figure 2. Frequency of sentiment targets.*
+
+```{r}
 # Calculate and visualize mean, standard deviation, and range of tokens per document
 token_counts <- rowSums(corona_train_dfm)
 
-
 ggplot(data = data.frame(token_counts), aes(x = token_counts)) +
-  geom_histogram(binwidth = 5, color = "black") +
+  geom_histogram(binwidth = 5, color = "black", fill = "blue") +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, size = 10, color = "darkblue"),
+    axis.text.y = element_text(size = 10, color = "darkblue"),
+    axis.title.x = element_text(size = 12, face = "bold"),
+    axis.title.y = element_text(size = 12, face = "bold"),
+    plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
+    panel.grid.major = element_line(color = "lightgrey"),
+    panel.grid.minor = element_blank()
+  ) +
   labs(title = "Histogram of Token Counts",
        x = "Token Counts",
-       y = "Frequency") 
+       y = "Frequency") +
+  scale_y_continuous(labels = scales::comma)
 ```
+*Figure 3. Distribution of words per Tweet.*
 
 ## Statistical Modeling
 
-For each classification task, we held out 30% of the data at random. We
-evaluated performance on four metrics: f1 score on the holdout set,
-difference between f1 score on the training and holdout set, and number
-of variables selected
+We evaluated the feature selection methods using three metrics:
 
-To establish a baseline for performance, we first trained a multinomial
+- **Accuracy** on the test set.
+- Difference between accuracy on the training and test set (**overfitting**).
+- Number of variables selected (model **complexity**).
+
+To establish a baseline for performance, we first trained a binomial
 logistic regression model using all available variables. We then use the
-four selection methods, training a multinomial logistic regression model
-on the features selected with each method.
+four selection methods, training a binomial logistic regression model
+on the features selected with each method. In total, we produced 5 models for each dataset:
 
-We used 10-fold cross validation accuracy to select the variables in all
-methods requiring a validation dataset (RFE, LASSO).
+- **Baseline** Full logistics model with no feature selection. This provided a baseline for comparison.
+- **CFS** Selected best of 20 correlation thresholds using 10-fold cross validation.
+- **RFE** Select best of 20 sized subsets using 10-fold cross validation. 
+- **LASSO** Select best penalty term using 10-fold cross validation. 
+- **CFS + RFE** Remove 20% of variables with lowest correlation, Select best of 20 sized subsets using 10-fold cross validation.
 
-**Spambase Dataset**
-
-Data scientists often include interaction terms in a model to capture
-the combined effect of two or more variables on the target variable.
-Interaction terms help to identify if the effect of one predictor on the
-outcome changes at different levels of another predictor, providing a
-more nuanced and accurate representation of the relationships within the
-data. This can lead to improved model performance and better insights
-into complex dependencies between variables. However, including
-interaction terms in a model significantly increases the number of
-features, as it involves creating new variables that represent the
-interactions between the original variables. To explore this effect, we
-added all possible pairwise interaction terms for the 52 variables in
-the Spambase data, resulting in $\( \frac{52 \times 51}{2} = 1,326 \)$
-additional features. We centered and scaled the original features prior
-to adding the terms. We use a binary logistic regression to predict if
-an email is spam (1) or not spam (0).
-
+Figure 5 illustrates parameter tuning using the twenty thresholds. In this example, a threshold that selected just under 2,000 features was used. Note the geometric progression in threshold selections; we selected thresholds in a way that removed a fixed proportion of features, in contrast to removing a fixed number of features. In figure 6, we see an example of the LASSO model selecting features by forcing parameter estimates to zero as the L1 Norm decreases.
 ```{r}
 set.seed(42)
 
@@ -952,11 +1018,11 @@ optimal_lambda <- as.double(names(lambdas)[which.min(lambdas)])
 
 
 # Fit the final Lasso model using the best lambda
-final_model <- glmnet(X_train, y_train, family = "binomial", maxit = baseline_maxit, alpha = 1, lambda.min.ratio = optimal_lambda)
+spam_lasso_final_model <- glmnet(X_train, y_train, family = "binomial", maxit = baseline_maxit, alpha = 1, lambda.min.ratio = optimal_lambda)
 
 # Predict on training and test datasets
-train_predictions_prob <- predict(final_model, newx = X_train, s = optimal_lambda, type = "response")
-test_predictions_prob <- predict(final_model, newx = X_test, s = optimal_lambda, type = "response")
+train_predictions_prob <- predict(spam_lasso_final_model, newx = X_train, s = optimal_lambda, type = "response")
+test_predictions_prob <- predict(spam_lasso_final_model, newx = X_test, s = optimal_lambda, type = "response")
 
 # Convert probabilities to class labels (0 or 1)
 train_predictions <- factor(ifelse(train_predictions_prob > 0.5, levels[2], levels[1]), levels = levels)
@@ -968,7 +1034,7 @@ test_accuracy_score <- calculate_binary_performance(spam_test$flag_spam, test_pr
 
 # Calculate the number of features
 num_features <- ncol(X_train) 
-non_zero_features <- length(nonzero_feature_indicies(final_model, min(final_model$lambda)))
+non_zero_features <- length(nonzero_feature_indicies(spam_lasso_final_model, min(spam_lasso_final_model$lambda)))
 
 spam_num_features3 <- non_zero_features
 
@@ -1031,33 +1097,6 @@ spam_cfs_rfe_plot_data <- subset_performance(feature_subsets)
 
 ```
 
-**COVID-19 NLP Text Classification Dataset**
-
-In a bag-of-words NLP classification task, text data is converted into a
-matrix of word frequencies or occurrences, where each row represents a
-document and each column represents a unique word from the entire
-corpus. The classification model then uses this matrix to predict the
-category of each document. One of the primary challenges in this
-approach is data sparsity, as most documents contain only a small subset
-of all possible words, resulting in a sparse matrix with many zero
-entries. Additionally, the size of the feature space can become
-extremely large, especially with extensive vocabularies, which can lead
-to increased computational demands, memory consumption, and the risk of
-overfitting, necessitating feature selection or dimensionality reduction
-techniques.
-
-We explored feature reduction methods on an nlp classifcation task. We
-first recoded sentiment labels to simplify the classification task:
-"Extremely Negative" and "Extremely Positive" are combined with
-"Negative" and "Positive" respectively, and "Neutral" sentiments are
-filtered out. We then process the Text by tokenizing the tweets,
-removing punctuation, numbers, and symbols, converting to lowercase,
-removing English stopwords, and stemming the words. This results in a
-Document-Feature Matrix (DFM), which is further refined by trimming
-infrequent terms in the training data and matching the test data
-features to those in the training set. We use a binary logistic
-regression to predict if the sentiment of a tweet is positive (1) or
-negative (0).
 
 ```{r}
 set.seed(42)
@@ -1296,6 +1335,100 @@ covid_cfs_rfe_accuracy_difference <- accuracy_difference
 covid_cfs_rfe_plot_data <- subset_performance(feature_subsets)
 
 ```
+
+
+
+```{r}
+ggplot(covid_cfs_plot_data, aes(x = lengths, y = performance)) +
+  geom_point() +
+  geom_line() +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, size = 10, color = "darkblue"),
+    axis.text.y = element_text(size = 10, color = "darkblue"),
+    axis.title.x = element_text(size = 12, face = "bold"),
+    axis.title.y = element_text(size = 12, face = "bold"),
+    plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
+    panel.grid.major = element_line(color = "lightgrey"),
+    panel.grid.minor = element_blank()
+  ) +
+  labs(title = "Accuracy vs Number of Features",
+       x = "Number of Features",
+       y = "Cross-validation Accuracy") +
+  scale_y_continuous(labels = scales::comma)
+```
+*Figure 4. Example of cross-validation accuracy with CFS model for the Sentiment task.*
+
+
+```{r}
+plot(spam_lasso_final_model)
+```
+*Figure 5. Example of coefficient behavior with LASSO model for the spam task.*
+
+## Results
+
+**Spambase Dataset**
+
+Table 1 displays the results of feature selection for the spam classification task. Each row represents a feature selection method, and the columns represent the various metrics. For model complexity, as measured by number of features, we consider a lower number to be better. For test accuracy, higher is better. And finally, for overfitting, as measured by the difference between the training and test scores, we consider lower better.
+
+As you can see, the baseline performance, without feature selection, has decent performance but is somewhat overfitted. The CFS method produces the best performance and a fairly parsimonious model with only 126 variables. The LASSO model is  the most parsimonious, but has the lowest performance suggesting it may have eliminated too many features.
+
+```{r}
+
+
+# Create visuals for Spambase dataset
+var_method <- c('Baseline', 'CFS', 'RFE', 'LASSO', 'CFS + RFE')
+num_features <- c(spam_baseline_non_zero_features, spam_cfs_non_zero_features, spam_rfe_non_zero_features, spam_lasso_non_zero_features, spam_cfs_rfe_non_zero_features)
+accuracy_score <- c(spam_baseline_test_accuracy_score, spam_cfs_test_accuracy_score, spam_rfe_test_accuracy_score, spam_lasso_test_accuracy_score, spam_cfs_rfe_test_accuracy_score)
+accuracy_diff <- c(spam_baseline_accuracy_difference, spam_cfs_accuracy_difference, spam_rfe_accuracy_difference, spam_lasso_accuracy_difference, spam_cfs_rfe_accuracy_difference)
+
+data <- data.frame(var_method, num_features, accuracy_score, accuracy_diff)
+
+# Format numbers
+data <- data %>%
+  mutate(
+    accuracy_score = round(accuracy_score, 3),
+    accuracy_diff = round(accuracy_diff, 3)
+  )
+
+# Create and render the table
+kable(data, format = "html", col.names = c("Method", "Number of Features", "Test Accuracy Score", "Accuracy Decrease from Train")) %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
+```
+*Table 1. Results of spam classification task.*
+
+**COVID-19 NLP Text Classification Dataset**
+
+Table 2 displays the results of the feature selection on the sentiment task. Baseline Results are similar to the spam classification results; with performance being decent but overfitted. We see the CFS produces the simplistic model and it performs better than the baseline, but it is not the best performing model. The LASSO has the best performance, but it has removed very few features. Finally, we observed that the RFE performs much better than in the spam classification task, but the hybrid method performs somewhat worse.
+
+```{r}
+# Create visuals for Covid dataset
+var_method <- c('Baseline', 'CFS', 'RFE', 'LASSO', 'CFS + RFE')
+num_features <- c(covid_baseline_non_zero_features, covid_cfs_non_zero_features, covid_rfe_non_zero_features, covid_lasso_non_zero_features, covid_cfs_rfe_non_zero_features)
+accuracy_score <- c(covid_baseline_test_accuracy_score, covid_cfs_test_accuracy_score, covid_rfe_test_accuracy_score, covid_lasso_test_accuracy_score, covid_cfs_rfe_test_accuracy_score)
+accuracy_diff <- c(covid_baseline_accuracy_difference, covid_cfs_accuracy_difference, covid_rfe_accuracy_difference, covid_lasso_accuracy_difference, covid_cfs_rfe_accuracy_difference)
+
+data <- data.frame(var_method, num_features, accuracy_score, accuracy_diff)
+
+# Format numbers
+data <- data %>%
+  mutate(
+    accuracy_score = round(accuracy_score, 3),
+    accuracy_diff = round(accuracy_diff, 3)
+  )
+
+# Create and render the table
+kable(data, format = "html", col.names = c("Method", "Number of Features", "Test Accuracy Score", "Accuracy Decrease from Train")) %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
+```
+*Table 2. Results of sentiment classification task.*
+
+
+**Observations per Feature**
+
+Fundamentally, what we are doing when we selecting features is increasing the number of observations we have to estimate each parameter. We wanted to explore this relationship a bit more, so we took our two tasks and altered them to decrease the initial ratio of observations per feature to stress test feature selection. For the Spam task, we decreased the ratio by selecting 10% of the training records at random. We Increased features for sentiment task by decreasing threshold for "rare" words from ten to two, thereby decreasing the ratio of observations per features. We then re-ran the analysis, and looked specifically at how the ratio of observations per feature impacted overfitting.
+
+The relationship between the two variables is quite clear (Figure 6). We have 20 data point, 5 for each dataset for each analysis. The datapoints tending to the left are the result of our new analysis, while the points tending to the right are from the original analysis. It is clear that overfitting decreases dramatically as the number of observations per feature increase.
 
 ```{r}
 set.seed(42)
@@ -1548,7 +1681,6 @@ spam_alt_cfs_rfe_test_accuracy_score <- test_accuracy_score
 spam_alt_cfs_rfe_accuracy_difference <- accuracy_difference
 spam_alt_cfs_rfe_plot_data <- subset_performance(feature_subsets)
 
-
 ```
 
 ```{r}
@@ -1793,55 +1925,8 @@ covid_alt_cfs_rfe_plot_data <- subset_performance(feature_subsets)
 
 ```
 
-# Results
 
 ```{r}
-
-
-# Create visuals for Spambase dataset
-var_method <- c('Baseline', 'CFS', 'RFE', 'LASSO', 'CFS + RFE')
-num_features <- c(spam_baseline_non_zero_features, spam_cfs_non_zero_features, spam_rfe_non_zero_features, spam_lasso_non_zero_features, spam_cfs_rfe_non_zero_features)
-accuracy_score <- c(spam_baseline_test_accuracy_score, spam_cfs_test_accuracy_score, spam_rfe_test_accuracy_score, spam_lasso_test_accuracy_score, spam_cfs_rfe_test_accuracy_score)
-accuracy_diff <- c(spam_baseline_accuracy_difference, spam_cfs_accuracy_difference, spam_rfe_accuracy_difference, spam_lasso_accuracy_difference, spam_cfs_rfe_accuracy_difference)
-
-data <- data.frame(var_method, num_features, accuracy_score, accuracy_diff)
-
-# Format numbers
-data <- data %>%
-  mutate(
-    accuracy_score = round(accuracy_score, 3),
-    accuracy_diff = round(accuracy_diff, 3)
-  )
-
-# Create and render the table
-kable(data, format = "html", col.names = c("Method", "Number of Features", "Test Accuracy Score", "Accuracy Decrease from Train")) %>%
-  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
-
-
-
-
-# Create visuals for Covid dataset
-var_method <- c('Baseline', 'CFS', 'RFE', 'LASSO', 'CFS + RFE')
-num_features <- c(covid_baseline_non_zero_features, covid_cfs_non_zero_features, covid_rfe_non_zero_features, covid_lasso_non_zero_features, covid_cfs_rfe_non_zero_features)
-accuracy_score <- c(covid_baseline_test_accuracy_score, covid_cfs_test_accuracy_score, covid_rfe_test_accuracy_score, covid_lasso_test_accuracy_score, covid_cfs_rfe_test_accuracy_score)
-accuracy_diff <- c(covid_baseline_accuracy_difference, covid_cfs_accuracy_difference, covid_rfe_accuracy_difference, covid_lasso_accuracy_difference, covid_cfs_rfe_accuracy_difference)
-
-data <- data.frame(var_method, num_features, accuracy_score, accuracy_diff)
-
-# Format numbers
-data <- data %>%
-  mutate(
-    accuracy_score = round(accuracy_score, 3),
-    accuracy_diff = round(accuracy_diff, 3)
-  )
-
-# Create and render the table
-kable(data, format = "html", col.names = c("Method", "Number of Features", "Test Accuracy Score", "Accuracy Decrease from Train")) %>%
-  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
-
-
-
-
 # Create visuals for trending
 datasets <- c('Spam Baseline', 'Covid Baseline', 'Spam Alt Baseline', 'Covid Alt Baseline',
               'Spam CFS', 'Covid CFS', 'Spam Alt CFS', 'Covid Alt CFS',
@@ -1878,13 +1963,28 @@ ggplot(data, aes(x = var_ratio, y = accuracy_diff)) +
   geom_point(aes(color = datasets)) +
   # geom_text(aes(label = paste(datasets, "\nSparsity:", paste0(sparsity, "%"))), vjust = -0.3, hjust = 0) +
   geom_smooth(method = "lm", formula = y ~ log(x), se = FALSE, color = "blue") +
-  labs(x = "Records per Feature", y = "Baseline Accuracy Decrease from Train") +
+  labs(x = "Observations per Feature", y = "Baseline Accuracy Decrease from Train", title = "Accuracy Decrease vs Observations per Feature") +
   theme_minimal() +
-  # expand_limits(y = c(0, max(data$accuracy_diff) + 0.05), x = c(0, max(data$var_ratio) + 2)) +
+  theme(
+    axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, size = 10, color = "darkblue"),
+    axis.text.y = element_text(size = 10, color = "darkblue"),
+    axis.title.x = element_text(size = 12, face = "bold"),
+    axis.title.y = element_text(size = 12, face = "bold"),
+    plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
+    panel.grid.major = element_line(color = "lightgrey"),
+    panel.grid.minor = element_blank()
+  ) +
   guides(color = "none")
 
 ```
+*Figure 6. Plot of overfitting as a function of observations per feature.*
+
+
 
 # Conclusion
+
+Feature selection is a crucial step in model building, and it often involves balancing several factors. Selecting fewer features tends to reduce overfitting by simplifying the model, which can sometimes lead to improved performance. However, there is no universally "best" feature elimination method, as the effectiveness of different techniques can vary depending on the specific dataset and problem. Ultimately, feature selection requires careful consideration of trade-offs between model complexity, test accuracy, overfitting, and the computational resources required for training and prediction. This balancing act ensures that the model remains both efficient and effective.
+
+Despite the rise of large "big data" datasets with a high ratio of observations to features, feature selection remains highly relevant. Even with thousands of features, reducing the feature space can significantly streamline the modeling process. A smaller feature space requires less exploration, allowing models to more efficiently find optimal solutions. Additionally, pragmatic constraints such as documentation and managing dependencies make feature selection beneficial. By focusing on the most relevant features, the complexity of both model interpretation and maintenance can be reduced, leading to more efficient workflows and clearer insights.
 
 # References
